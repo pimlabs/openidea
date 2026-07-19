@@ -8,7 +8,7 @@ Argumen dari user (opsional, nama milestone/reprioritisasi spesifik): $ARGUMENTS
 
 ## Prasyarat
 
-Minimal 1 ide berstatus `ready`. Kalau tidak ada, stop dan arahkan ke `/oi:evaluate` dulu.
+Minimal 1 ide berstatus `ready`. Kalau tidak ada, stop dan arahkan ke `/openidea:evaluate` dulu.
 
 ## Proses
 

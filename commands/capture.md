@@ -8,7 +8,7 @@ Input dari user (cerita bebas, atau path/isi dokumen MOM/transkrip): $ARGUMENTS
 
 ## Prasyarat
 
-`openidea/BRIEF.md` harus ada. Kalau belum, stop dan arahkan ke `/oi:init` dulu.
+`openidea/BRIEF.md` harus ada. Kalau belum, stop dan arahkan ke `/openidea:init` dulu.
 
 ## Proses
 

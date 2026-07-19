@@ -26,4 +26,4 @@ Laporan drift + rekomendasi ke user. **Read-only — jangan ubah file apapun sec
 
 ## Catatan
 
-Command ini adalah entry point umpan balik teknis. Kalau lead engineer menemukan sesuatu secara teknis tidak feasible saat audit, catat temuan itu lewat `/oi:capture` biasa (bukan command terpisah) — ini bisa memicu siklus revisi baru ke client lewat `/oi:compile` kalau diperlukan.
+Command ini adalah entry point umpan balik teknis. Kalau lead engineer menemukan sesuatu secara teknis tidak feasible saat audit, catat temuan itu lewat `/openidea:capture` biasa (bukan command terpisah) — ini bisa memicu siklus revisi baru ke client lewat `/openidea:compile` kalau diperlukan.

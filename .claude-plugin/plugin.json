@@ -1,5 +1,5 @@
 {
-  "name": "oi",
+  "name": "openidea",
   "description": "OpenIdea — kelola siklus hidup ide produk end-to-end secara file-based — BRIEF, capture ide, evaluasi, roadmap, sampai draft spec teknis OpenSpec.",
   "version": "1.0.0",
   "author": { "name": "Eko Dedy Purnomo" }

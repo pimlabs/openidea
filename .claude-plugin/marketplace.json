@@ -4,7 +4,7 @@
   "owner": { "name": "Eko Dedy Purnomo" },
   "plugins": [
     {
-      "name": "oi",
+      "name": "openidea",
       "source": "./",
       "description": "Kelola siklus hidup ide produk end-to-end secara file-based — BRIEF, capture ide, evaluasi, roadmap, sampai draft spec teknis OpenSpec."
     }

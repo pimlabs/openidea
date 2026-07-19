@@ -22,7 +22,7 @@ Minimal 1 ide berstatus `captured`. Kalau tidak ada, stop dan beri tahu tidak ad
 6. Traverse chain `merged_into` — kalau target merge ternyata juga `killed`, kasih notice untuk ditinjau ulang.
 7. Rekomendasikan status (`ready`/`parked`/`merged`/`killed`) dan kategori per ide → **user review & approve** sebelum ditulis ke file.
 8. Bulk-rename kategori: dukung kalau diminta eksplisit di $ARGUMENTS atau oleh user (bukan command terpisah).
-9. Command ini **tidak terkunci mode** — kalau di tengah sesi user kepikiran ide baru, boleh selipkan `/oi:capture`. Ide baru itu masuk status `captured`, **tidak** ikut dievaluasi di sesi yang sama.
+9. Command ini **tidak terkunci mode** — kalau di tengah sesi user kepikiran ide baru, boleh selipkan `/openidea:capture`. Ide baru itu masuk status `captured`, **tidak** ikut dievaluasi di sesi yang sama.
 
 ## Output
 

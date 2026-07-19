@@ -8,7 +8,7 @@ Argumen dari user (opsional, scope ke milestone tertentu): $ARGUMENTS
 
 ## Prasyarat
 
-Ada ide `ready` yang sudah masuk `openidea/ROADMAP.md`. Kalau tidak ada, stop dan arahkan ke `/oi:plan` dulu.
+Ada ide `ready` yang sudah masuk `openidea/ROADMAP.md`. Kalau tidak ada, stop dan arahkan ke `/openidea:plan` dulu.
 
 ## Proses
 

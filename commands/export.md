@@ -16,7 +16,7 @@ Tidak ada prasyarat keras, tapi minta nama milestone dulu kalau belum ada di $AR
    - `openidea/BRIEF.md` — konteks relevan saja (bukan seluruh isi mentah).
    - Scope milestone dari `openidea/ROADMAP.md`.
    - `openidea/proposals/<approved terkait milestone>.md` — kalau ada.
-   - Isi lengkap `openidea/ideas/<slug>.md` terkait milestone (termasuk `type: chore` — export **tidak** mengecualikan chore, beda dari `/oi:compile`).
+   - Isi lengkap `openidea/ideas/<slug>.md` terkait milestone (termasuk `type: chore` — export **tidak** mengecualikan chore, beda dari `/openidea:compile`).
 2. **Selalu** kecualikan `openidea/discovery/` — tanpa pengecualian, prinsip keamanan data client.
 3. **Selalu** kecualikan ide dari milestone lain yang tidak relevan.
 4. Kalau parameter bahasa diminta, translasi **hanya** di file export ini — jangan ubah source `ideas/`.
