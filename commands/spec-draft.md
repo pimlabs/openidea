@@ -2,7 +2,7 @@
 description: Generate proposal/design/tasks OpenSpec dari milestone/ide ready
 ---
 
-Baca `.claude/skills/openidea/SKILL.md` section 2 (aturan lokasi file, `openspec/` tidak pernah disentuh langsung kecuali di sini), 3.3, 3.4, 3.2 sebelum lanjut.
+Muat skill `openidea` (Skill tool) buat baca section 2 (aturan lokasi file, `openspec/` tidak pernah disentuh langsung kecuali di sini), 3.3, 3.4, 3.2 sebelum lanjut.
 
 Argumen dari user: nama milestone dan/atau slug ide spesifik. Mendukung many-to-one (beberapa ide digabung jadi satu proposal). $ARGUMENTS
 

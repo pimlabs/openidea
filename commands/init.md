@@ -2,7 +2,7 @@
 description: Structuring visi produk jadi openidea/BRIEF.md
 ---
 
-Baca `.claude/skills/openidea/SKILL.md` section 1 (Filosofi), 3.1 (schema `BRIEF.md`) sebelum lanjut.
+Muat skill `openidea` (Skill tool) buat baca section 1 (Filosofi), 3.1 (schema `BRIEF.md`) sebelum lanjut.
 
 Argumen dari user (jika ada): $ARGUMENTS
 

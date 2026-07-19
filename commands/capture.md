@@ -2,7 +2,7 @@
 description: Tangkap ide baru (cerita bebas atau ekstraksi dari dokumen) jadi openidea/ideas/<slug>.md
 ---
 
-Baca `.claude/skills/openidea/SKILL.md` section 3.2 (schema ide), section 7 (regenerasi INDEX.md) sebelum lanjut.
+Muat skill `openidea` (Skill tool) buat baca section 3.2 (schema ide), section 7 (regenerasi INDEX.md) sebelum lanjut.
 
 Input dari user (cerita bebas, atau path/isi dokumen MOM/transkrip): $ARGUMENTS
 

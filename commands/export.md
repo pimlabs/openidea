@@ -2,7 +2,7 @@
 description: Kumpulkan paket teknis milestone untuk handoff ke pihak tanpa akses repo
 ---
 
-Baca `.claude/skills/openidea/SKILL.md` section 3.6, 3.7 sebelum lanjut.
+Muat skill `openidea` (Skill tool) buat baca section 3.6, 3.7 sebelum lanjut.
 
 Argumen dari user: nama milestone (wajib), parameter bahasa (opsional). $ARGUMENTS
 

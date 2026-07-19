@@ -2,7 +2,7 @@
 description: Evaluasi ide captured — deteksi overlap/konflik, rekomendasi status & kategori
 ---
 
-Baca `.claude/skills/openidea/SKILL.md` section 3.2, 5 (status lifecycle), 7 sebelum lanjut.
+Muat skill `openidea` (Skill tool) buat baca section 3.2, 5 (status lifecycle), 7 sebelum lanjut.
 
 Argumen dari user (opsional, misal scope ke kategori tertentu atau bulk-rename kategori): $ARGUMENTS
 

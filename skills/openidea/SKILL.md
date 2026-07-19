@@ -14,7 +14,7 @@ Command individual ada di `commands/*.md` pada repo plugin ini. Tiap command fil
 - **File-based** — semua state di markdown, git-friendly, bisa di-diff, dibaca tanpa tools tambahan.
 - **Human decides, Claude drafts** — Claude structuring & rekomendasi; keputusan final di tangan pengguna. Jangan pernah mengubah status ide/milestone tanpa review pengguna, kecuali eksplisit diminta ("tandai Milestone 1 approved").
 - **Independen dari OpenSpec** — OpenIdea tidak pernah menulis ke `openspec/changes/` atau `openspec/specs/` secara langsung kecuali lewat `/openidea:spec-draft`. Tidak bergantung pada skill `openspec-drafter` generic.
-- **Portable** — seluruh isi `openidea/` harus dipahami manusia atau AI lain tanpa konteks percakapan tambahan. Skill ini dibundel di repo (`.claude/skills/openidea/`), bukan skill personal.
+- **Portable** — seluruh isi `openidea/` harus dipahami manusia atau AI lain tanpa konteks percakapan tambahan. Skill ini didistribusikan sebagai plugin project (`/plugin install openidea@pimlabs`), bukan skill personal per-user.
 - **Async-only** — didesain untuk kerja sendiri atau handoff bergiliran, bukan simultaneous multi-user editing real-time. Git conflict pada file auto-generated (`ideas/INDEX.md`) diselesaikan dengan regenerate ulang, bukan manual merge baris-per-baris.
 - **Nothing disappears** — status berubah, file tidak pernah dihapus/ditimpa tanpa jejak. Riwayat tercatat di field `history[]`.
 

@@ -2,7 +2,7 @@
 description: Audit read-only drift antara openspec/changes/<milestone> vs proposals/ideas
 ---
 
-Baca `.claude/skills/openidea/SKILL.md` section 2, 3.4, 3.2 sebelum lanjut.
+Muat skill `openidea` (Skill tool) buat baca section 2, 3.4, 3.2 sebelum lanjut.
 
 Argumen dari user: nama milestone target. $ARGUMENTS
 

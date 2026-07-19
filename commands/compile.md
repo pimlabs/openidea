@@ -2,7 +2,7 @@
 description: Compile ide ready jadi narasi proposal client-facing baru (proposals/vN.md)
 ---
 
-Baca `.claude/skills/openidea/SKILL.md` section 3.4, 3.6 (kenapa `discovery/` dikecualikan) sebelum lanjut.
+Muat skill `openidea` (Skill tool) buat baca section 3.4, 3.6 (kenapa `discovery/` dikecualikan) sebelum lanjut.
 
 Argumen dari user (opsional, scope ke milestone tertentu): $ARGUMENTS
 

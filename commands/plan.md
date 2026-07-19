@@ -2,7 +2,7 @@
 description: Susun ide ready ke milestone di openidea/ROADMAP.md
 ---
 
-Baca `.claude/skills/openidea/SKILL.md` section 3.3 (schema ROADMAP.md) sebelum lanjut.
+Muat skill `openidea` (Skill tool) buat baca section 3.3 (schema ROADMAP.md) sebelum lanjut.
 
 Argumen dari user (opsional, nama milestone/reprioritisasi spesifik): $ARGUMENTS
 
