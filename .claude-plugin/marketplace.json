@@ -1,0 +1,12 @@
+{
+  "name": "openidea-marketplace",
+  "description": "Marketplace pribadi untuk plugin openidea — manajemen siklus ide produk file-based.",
+  "owner": { "name": "Eko Dedy Purnomo" },
+  "plugins": [
+    {
+      "name": "oi",
+      "source": "./",
+      "description": "Kelola siklus hidup ide produk end-to-end secara file-based — BRIEF, capture ide, evaluasi, roadmap, sampai draft spec teknis OpenSpec."
+    }
+  ]
+}
