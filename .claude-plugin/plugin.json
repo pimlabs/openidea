@@ -3,5 +3,7 @@
   "description": "OpenIdea — manage a product idea lifecycle end-to-end, file-based — BRIEF, idea capture, evaluation, roadmap, through to OpenSpec technical spec drafting.",
   "version": "0.1.0",
   "author": { "name": "Eko Dedy Purnomo" },
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://github.com/pimlabs/openidea",
+  "repository": "https://github.com/pimlabs/openidea"
 }

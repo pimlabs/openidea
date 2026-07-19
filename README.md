@@ -9,6 +9,35 @@ A Claude Code plugin for managing a product idea lifecycle end-to-end, file-base
 /plugin install openidea@pimlabs
 ```
 
+## Quick Start
+
+A typical solo flow, start to finish:
+
+```
+/openidea:init
+  → tell it your product vision in your own words
+  → writes openidea/BRIEF.md
+
+/openidea:capture
+  → describe an idea, or paste in meeting notes to extract several
+  → writes openidea/ideas/<slug>.md, status: captured
+
+/openidea:evaluate
+  → reviews captured ideas for overlap/conflict, recommends a status
+  → you approve → status: ready
+
+/openidea:plan
+  → arranges ready ideas into a milestone
+  → writes openidea/ROADMAP.md
+
+/openidea:spec-draft <milestone name>
+  → requires an existing openspec/ folder (from OpenSpec tooling)
+  → generates openspec/changes/<milestone>/{proposal,design,tasks}.md
+  → idea status: promoted
+```
+
+If a client or an external team is involved, `/openidea:compile` (client-facing proposal narrative) and `/openidea:export` (technical handoff package) slot in between `plan` and `spec-draft`; `/openidea:spec-audit` checks the OpenSpec output against the source ideas afterward. See `skills/openidea/SKILL.md` section 4 for when each applies.
+
 ## Commands
 
 | Command | What it does |

@@ -155,6 +155,8 @@ A curated package for external parties without repo access. Auto-versioned, neve
 
 ## 4. Command Index
 
+**Core** (always applies, the solo/default path):
+
 | Command | Prerequisite | Output |
 |---|---|---|
 | `/openidea:init` | — | `BRIEF.md` |
@@ -162,9 +164,16 @@ A curated package for external parties without repo access. Auto-versioned, neve
 | `/openidea:evaluate` | ≥1 idea `captured` | idea frontmatter updated, moved to `archive/` if final |
 | `/openidea:plan` | ≥1 idea `ready` | `ROADMAP.md` |
 | `/openidea:spec-draft` | `openspec/` exists, target milestone has ≥1 idea `ready` | `openspec/changes/<milestone>/{proposal,design,tasks}.md`, idea → `promoted` |
+
+**Extended** (situational — only relevant once an external party, e.g. a client or a team without repo access, is involved):
+
+| Command | Prerequisite | Output |
+|---|---|---|
 | `/openidea:compile` | idea `ready` exists in `ROADMAP.md` | new `proposals/vN.md` |
 | `/openidea:export` | — | `exports/<milestone-slug>-vN.md` |
 | `/openidea:spec-audit` | `openspec/changes/<milestone>` folder exists | drift report (read-only) |
+
+The flow in one line: **init → capture → evaluate → plan → spec-draft** is the core loop, always applies. **compile → export → spec-audit** switch on whenever a client or an external, repo-less team is in that cycle — they slot in between `plan` and `spec-draft`, and `spec-audit` runs any time after `spec-draft`.
 
 For process detail on each command, read its file in `commands/`.
 
