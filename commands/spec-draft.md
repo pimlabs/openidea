@@ -1,29 +1,29 @@
 ---
-description: Generate proposal/design/tasks OpenSpec dari milestone/ide ready
+description: Generate OpenSpec proposal/design/tasks from a milestone/ready ideas
 ---
 
-Muat skill `openidea` (Skill tool) buat baca section 2 (aturan lokasi file, `openspec/` tidak pernah disentuh langsung kecuali di sini), 3.3, 3.4, 3.2 sebelum lanjut.
+Load the `openidea` skill (Skill tool) to read section 2 (file location rules — `openspec/` is never touched directly except here), 3.3, 3.4, 3.2 before proceeding.
 
-Argumen dari user: nama milestone dan/atau slug ide spesifik. Mendukung many-to-one (beberapa ide digabung jadi satu proposal). $ARGUMENTS
+Arguments from the user: milestone name and/or specific idea slugs. Supports many-to-one (multiple ideas combined into one proposal). $ARGUMENTS
 
-## Prasyarat (blocking)
+## Prerequisite (blocking)
 
-1. `openspec/` harus sudah ada di root project. OpenIdea **tidak** bootstrap folder ini sendiri — kalau belum ada, **stop** dan beri tahu eksplisit ke user (arahkan pakai tooling OpenSpec untuk init dulu).
-2. Milestone target harus punya minimal 1 ide berstatus `ready`. Kalau kosong, **stop**, jangan generate proposal kosong.
+1. `openspec/` must already exist at the project root. OpenIdea does **not** bootstrap this folder itself — if it doesn't exist, **stop** and tell the user explicitly (point them to the OpenSpec tooling's own init first).
+2. The target milestone must have at least 1 idea with status `ready`. If empty, **stop** — never generate an empty proposal.
 
-## Proses
+## Process
 
-1. Baca konteks lengkap:
-   - `openidea/BRIEF.md` — konteks & constraint produk.
-   - `openidea/ROADMAP.md` — scope & urutan milestone target.
-   - `openidea/proposals/<versi approved terkait milestone>.md` — kalau ada, narasi yang sudah disepakati client.
-   - `openidea/ideas/<slug>.md` terkait — detail 5Q lengkap tiap ide.
-2. Kalau `openidea/proposals/` belum ada sama sekali (kasus solo tanpa siklus client-approval): tetap jalan langsung dari `ROADMAP.md` + `ideas/` saja. `compile`/approval **bukan** prasyarat wajib di jalur ini.
-3. Kalau folder target `openspec/changes/<milestone-name>/` **sudah ada isinya**: jangan overwrite otomatis. Tawarkan opsi ke user — append sebagai catatan tambahan, atau serahkan penggabungan manual.
+1. Read the full context:
+   - `openidea/BRIEF.md` — product context & constraints.
+   - `openidea/ROADMAP.md` — target milestone's scope & order.
+   - `openidea/proposals/<approved version for this milestone>.md` — if it exists, the narrative already agreed with the client.
+   - The related `openidea/ideas/<slug>.md` — full 5Q detail for each idea.
+2. If `openidea/proposals/` doesn't exist at all (a solo case with no client-approval cycle): still proceed directly from `ROADMAP.md` + `ideas/` alone. `compile`/approval is **not** a required prerequisite on this path.
+3. If the target folder `openspec/changes/<milestone-name>/` **already has content**: don't auto-overwrite. Offer the user options — append as an additional note, or leave the merge to be done manually.
 
 ## Output
 
-- `openspec/changes/<milestone-name>/proposal.md`, `design.md`, `tasks.md` — mengikuti konvensi OpenSpec standar.
-- Update status ide terkait jadi `promoted`, pindah file ke `openidea/ideas/promoted/`, isi `promoted_to` (path folder openspec), isi `promoted_with` kalau many-to-one.
-- Centang checklist ide terkait di `openidea/ROADMAP.md`.
+- `openspec/changes/<milestone-name>/proposal.md`, `design.md`, `tasks.md` — following standard OpenSpec convention.
+- Update the related ideas' status to `promoted`, move the files to `openidea/ideas/promoted/`, fill `promoted_to` (openspec folder path), fill `promoted_with` if many-to-one.
+- Check off the related idea in `openidea/ROADMAP.md`.
 - Regenerate `openidea/ideas/INDEX.md`.

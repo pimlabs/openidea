@@ -1,12 +1,12 @@
 {
   "name": "pimlabs",
-  "description": "Marketplace plugin pimlabs.",
+  "description": "pimlabs plugin marketplace.",
   "owner": { "name": "Eko Dedy Purnomo" },
   "plugins": [
     {
       "name": "openidea",
       "source": "./",
-      "description": "Kelola siklus hidup ide produk end-to-end secara file-based — BRIEF, capture ide, evaluasi, roadmap, sampai draft spec teknis OpenSpec."
+      "description": "Manage a product idea lifecycle end-to-end, file-based — BRIEF, idea capture, evaluation, roadmap, through to OpenSpec technical spec drafting."
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "openidea",
-  "description": "OpenIdea — kelola siklus hidup ide produk end-to-end secara file-based — BRIEF, capture ide, evaluasi, roadmap, sampai draft spec teknis OpenSpec.",
-  "version": "1.0.0",
+  "description": "OpenIdea — manage a product idea lifecycle end-to-end, file-based — BRIEF, idea capture, evaluation, roadmap, through to OpenSpec technical spec drafting.",
+  "version": "1.1.0",
   "author": { "name": "Eko Dedy Purnomo" }
 }

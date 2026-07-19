@@ -1,27 +1,27 @@
 ---
-description: Kumpulkan paket teknis milestone untuk handoff ke pihak tanpa akses repo
+description: Package a milestone's technical content for handoff to a party without repo access
 ---
 
-Muat skill `openidea` (Skill tool) buat baca section 3.6, 3.7 sebelum lanjut.
+Load the `openidea` skill (Skill tool) to read section 3.6, 3.7 before proceeding.
 
-Argumen dari user: nama milestone (wajib), parameter bahasa (opsional). $ARGUMENTS
+Arguments from the user: milestone name (required), language parameter (optional). $ARGUMENTS
 
-## Prasyarat
+## Prerequisite
 
-Tidak ada prasyarat keras, tapi minta nama milestone dulu kalau belum ada di $ARGUMENTS.
+No hard prerequisite, but ask for the milestone name first if it's not already in $ARGUMENTS.
 
-## Proses
+## Process
 
-1. Kumpulkan:
-   - `openidea/BRIEF.md` — konteks relevan saja (bukan seluruh isi mentah).
-   - Scope milestone dari `openidea/ROADMAP.md`.
-   - `openidea/proposals/<approved terkait milestone>.md` — kalau ada.
-   - Isi lengkap `openidea/ideas/<slug>.md` terkait milestone (termasuk `type: chore` — export **tidak** mengecualikan chore, beda dari `/openidea:compile`).
-2. **Selalu** kecualikan `openidea/discovery/` — tanpa pengecualian, prinsip keamanan data client.
-3. **Selalu** kecualikan ide dari milestone lain yang tidak relevan.
-4. Kalau parameter bahasa diminta, translasi **hanya** di file export ini — jangan ubah source `ideas/`.
-5. Tambahkan header penjelasan di awal dokumen: konteks apa ini, cara baca tiap section, untuk pembaca yang mungkin tidak pakai AI/skill apapun.
+1. Gather:
+   - `openidea/BRIEF.md` — relevant context only (not the entire raw content).
+   - The milestone's scope from `openidea/ROADMAP.md`.
+   - `openidea/proposals/<approved for this milestone>.md` — if it exists.
+   - The full content of each `openidea/ideas/<slug>.md` related to the milestone (including `type: chore` — export does **not** exclude chores, unlike `/openidea:compile`).
+2. **Always** exclude `openidea/discovery/` — no exceptions, this is a client data-security principle.
+3. **Always** exclude ideas from other, unrelated milestones.
+4. If a language parameter is requested, translate **only** in this export file — don't change the `ideas/` source.
+5. Add an explanatory header at the top of the document: what this is, how to read each section, for a reader who may not be using any AI/skill.
 
 ## Output
 
-`openidea/exports/<milestone-slug>-vN.md` — auto-versioned, tidak overwrite file export sebelumnya.
+`openidea/exports/<milestone-slug>-vN.md` — auto-versioned, never overwrites a previous export file.

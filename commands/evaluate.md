@@ -1,34 +1,34 @@
 ---
-description: Evaluasi ide captured — deteksi overlap/konflik, rekomendasi status & kategori
+description: Evaluate captured ideas — detect overlap/conflict, recommend status & category
 ---
 
-Muat skill `openidea` (Skill tool) buat baca section 3.2, 5 (status lifecycle), 7 sebelum lanjut.
+Load the `openidea` skill (Skill tool) to read section 3.2, 5 (status lifecycle), 7 before proceeding.
 
-Argumen dari user (opsional, misal scope ke kategori tertentu atau bulk-rename kategori): $ARGUMENTS
+Arguments from the user (optional, e.g. scope to a specific category, or bulk category rename): $ARGUMENTS
 
-## Prasyarat
+## Prerequisite
 
-Minimal 1 ide berstatus `captured`. Kalau tidak ada, stop dan beri tahu tidak ada yang perlu dievaluasi.
+At least 1 idea with status `captured`. If none, stop and say there's nothing to evaluate.
 
-## Proses
+## Process
 
-1. Bandingkan **Problem** & **Siapa yang pakai** antar ide untuk deteksi **overlap** (scope beririsan nyata, bukan sekadar topik mirip).
-2. Bedakan overlap dari **konflik** (requirement saling bertentangan dari sumber berbeda). Untuk konflik: jangan menebak resolusinya — wajib flag ke user dan minta klarifikasi eksplisit.
-3. Overlap check mencakup **3 sumber**: `ideas/*.md` aktif, `ideas/archive/*.md`, `ideas/promoted/*.md` — bukan hanya ide aktif.
-4. Kalau ada ide terlalu besar (mengandung 2+ scope beda milestone/waktu kerja): rekomendasikan split jadi 2+ ide baru. Kalau user setuju: ide original → status `split`, isi `split_into`, pindah ke `archive/`.
-5. Validasi struktural (bukan judgment):
-   - `depends_on` tidak boleh membentuk siklus, langsung maupun tidak langsung. Siklus langsung = **blocking**, stop dan minta user perbaiki dulu.
-   - Semua referensi `depends_on` harus menunjuk slug yang benar-benar ada. Broken reference = **flag** (advisory, tidak blocking).
-6. Traverse chain `merged_into` — kalau target merge ternyata juga `killed`, kasih notice untuk ditinjau ulang.
-7. Rekomendasikan status (`ready`/`parked`/`merged`/`killed`) dan kategori per ide → **user review & approve** sebelum ditulis ke file.
-8. Bulk-rename kategori: dukung kalau diminta eksplisit di $ARGUMENTS atau oleh user (bukan command terpisah).
-9. Command ini **tidak terkunci mode** — kalau di tengah sesi user kepikiran ide baru, boleh selipkan `/openidea:capture`. Ide baru itu masuk status `captured`, **tidak** ikut dievaluasi di sesi yang sama.
+1. Compare **Problem** & **Who uses it** across ideas to detect **overlap** (genuinely intersecting scope, not just a similar topic).
+2. Distinguish overlap from **conflict** (requirements that contradict each other from different sources). For conflicts: don't guess a resolution — always flag it to the user and ask for explicit clarification.
+3. The overlap check covers **3 sources**: active `ideas/*.md`, `ideas/archive/*.md`, `ideas/promoted/*.md` — not just active ideas.
+4. If an idea is too large (contains 2+ scopes belonging to different milestones/work periods): recommend splitting it into 2+ new ideas. If the user agrees: the original idea → status `split`, fill `split_into`, move to `archive/`.
+5. Structural validation (not judgment):
+   - `depends_on` must not form a cycle, direct or indirect. A direct cycle is **blocking** — stop and ask the user to fix it first.
+   - Every `depends_on` reference must point to a slug that actually exists. A broken reference is a **flag** (advisory, not blocking).
+6. Traverse the `merged_into` chain — if the merge target turns out to also be `killed`, give a notice to review it.
+7. Recommend a status (`ready`/`parked`/`merged`/`killed`) and category per idea → **user reviews & approves** before writing to file.
+8. Bulk category rename: support it if explicitly requested via $ARGUMENTS or by the user (not a separate command).
+9. This command is **not a locked mode** — if the user thinks of a new idea mid-session, feel free to slip in `/openidea:capture`. That new idea enters with status `captured`, and is **not** evaluated in the same session.
 
 ## Output
 
-- Update frontmatter tiap ide terkait sesuai approval user.
-- `killed` **wajib** ada `triage_note` — jangan tulis status `killed` tanpa itu.
-- Kategori **wajib** terisi sebelum status naik ke `ready`.
-- File dengan status final (`killed`/`merged`/`split`) dipindah ke `archive/`.
-- Tambah entry baru di `history[]` tiap ide yang statusnya berubah.
+- Update frontmatter on each affected idea per the user's approval.
+- `killed` **requires** a `triage_note` — never write status `killed` without one.
+- Category **must** be filled before status can move up to `ready`.
+- Files with a final status (`killed`/`merged`/`split`) get moved to `archive/`.
+- Add a new entry to `history[]` for every idea whose status changed.
 - Regenerate `openidea/ideas/INDEX.md`.

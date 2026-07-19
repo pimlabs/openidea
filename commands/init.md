@@ -1,24 +1,24 @@
 ---
-description: Structuring visi produk jadi openidea/BRIEF.md
+description: Structure a product vision into openidea/BRIEF.md
 ---
 
-Muat skill `openidea` (Skill tool) buat baca section 1 (Filosofi), 3.1 (schema `BRIEF.md`) sebelum lanjut.
+Load the `openidea` skill (Skill tool) to read section 1 (Philosophy), 3.1 (`BRIEF.md` schema) before proceeding.
 
-Argumen dari user (jika ada): $ARGUMENTS
+Arguments from the user (if any): $ARGUMENTS
 
-## Prasyarat
+## Prerequisite
 
-Tidak ada prasyarat keras. Tapi cek dulu apakah `openidea/BRIEF.md` sudah ada.
+No hard prerequisite. But first check whether `openidea/BRIEF.md` already exists.
 
-## Proses
+## Process
 
-1. Jika `openidea/BRIEF.md` **belum ada**: minta user cerita bebas tentang visi produk (kalau belum diberikan di $ARGUMENTS atau pesan sebelumnya). Structuring jadi body sesuai schema 3.1: Vision, Target Users, Core Value Prop, Fitur Besar (checklist kasar), Non-goals, Constraints.
-2. Jika `openidea/BRIEF.md` **sudah ada**:
-   - Kalau ini revisi kecil (nambah/ubah satu section) → edit langsung, tidak perlu arsip.
-   - Kalau ini penulisan ulang total → **wajib** tanya konfirmasi dulu ke user. Kalau dikonfirmasi, salin isi lama ke `openidea/discovery/brief-v{N}-superseded.md` (N = increment dari versi superseded terakhir) sebelum menimpa `BRIEF.md`.
-3. Tulis frontmatter: `schema_version: 1`, `project_status: active`.
-4. Jangan mengarang detail yang tidak disebutkan user — tanya balik kalau ada gap penting (misal target users tidak jelas).
+1. If `openidea/BRIEF.md` **doesn't exist yet**: ask the user for a free-form story about the product vision (if not already given in $ARGUMENTS or a prior message). Structure it into the body per schema 3.1: Vision, Target Users, Core Value Prop, Key Features (rough checklist), Non-goals, Constraints.
+2. If `openidea/BRIEF.md` **already exists**:
+   - A small revision (add/change one section) → edit directly, no archiving needed.
+   - A full rewrite → **must** confirm with the user first. Once confirmed, copy the old content to `openidea/discovery/brief-v{N}-superseded.md` (N = increment from the last superseded version) before overwriting `BRIEF.md`.
+3. Write the frontmatter: `schema_version: 1`, `project_status: active`.
+4. Don't make up details the user didn't mention — ask back if there's an important gap (e.g. unclear target users).
 
 ## Output
 
-`openidea/BRIEF.md` (create atau update). Tunjukkan hasil akhir ke user untuk direview.
+`openidea/BRIEF.md` (create or update). Show the final result to the user for review.

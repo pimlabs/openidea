@@ -1,24 +1,24 @@
 ---
-description: Compile ide ready jadi narasi proposal client-facing baru (proposals/vN.md)
+description: Compile ready ideas into a new client-facing proposal narrative (proposals/vN.md)
 ---
 
-Muat skill `openidea` (Skill tool) buat baca section 3.4, 3.6 (kenapa `discovery/` dikecualikan) sebelum lanjut.
+Load the `openidea` skill (Skill tool) to read section 3.4, 3.6 (why `discovery/` is excluded) before proceeding.
 
-Argumen dari user (opsional, scope ke milestone tertentu): $ARGUMENTS
+Arguments from the user (optional, scope to a specific milestone): $ARGUMENTS
 
-## Prasyarat
+## Prerequisite
 
-Ada ide `ready` yang sudah masuk `openidea/ROADMAP.md`. Kalau tidak ada, stop dan arahkan ke `/openidea:plan` dulu.
+There must be a `ready` idea already in `openidea/ROADMAP.md`. If not, stop and point the user to `/openidea:plan` first.
 
-## Proses
+## Process
 
-1. Tentukan cakupan: kalau $ARGUMENTS scope ke milestone tertentu, pakai itu. Kalau tidak, tanya user atau tarik semua milestone di ROADMAP.
-2. Ambil `openidea/BRIEF.md` + ide `ready` (dikelompokkan per `category`) sesuai cakupan.
-3. Urutkan sesuai urutan heading di `openidea/ROADMAP.md`.
-4. Tulis narasi presentable (bahasa client-facing, bukan jargon teknis mentah). `type: chore` **dikecualikan** dari dokumen ini (non-user-facing).
-5. Simpan snapshot referensi `openidea/ROADMAP.md` saat itu (hash atau timestamp) ke field `compiled_from_roadmap_snapshot`.
-6. Guard rail advisory: kalau command ini dipanggil >5x untuk milestone yang sama tanpa ada yang mencapai status `approved`, kasih catatan observasi ringan ke user (bukan blocking) — mengindikasikan mungkin perlu sesi sync langsung, bukan lanjut iterasi dokumen.
+1. Determine scope: if $ARGUMENTS scopes to a specific milestone, use that. Otherwise, ask the user or pull in every milestone in ROADMAP.
+2. Pull `openidea/BRIEF.md` + `ready` ideas (grouped by `category`) matching the scope.
+3. Order them per the heading order in `openidea/ROADMAP.md`.
+4. Write a presentable narrative (client-facing language, not raw technical jargon). `type: chore` is **excluded** from this document (non-user-facing).
+5. Save a reference snapshot of `openidea/ROADMAP.md` at that moment (hash or timestamp) into the `compiled_from_roadmap_snapshot` field.
+6. Advisory guard rail: if this command is called >5 times for the same milestone without any version reaching `approved`, give the user a light observation note (not blocking) — it may suggest a live sync session is needed rather than another document iteration.
 
 ## Output
 
-`openidea/proposals/vN.md` baru — N auto-increment dari versi tertinggi yang ada. Status `draft` (atau `revision_requested` kalau memang siklus revisi). **Versi lama tidak pernah ditimpa.**
+A new `openidea/proposals/vN.md` — N auto-incremented from the highest existing version. Status `draft` (or `revision_requested` if this is a revision cycle). **Old versions are never overwritten.**

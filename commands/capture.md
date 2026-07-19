@@ -1,28 +1,28 @@
 ---
-description: Tangkap ide baru (cerita bebas atau ekstraksi dari dokumen) jadi openidea/ideas/<slug>.md
+description: Capture a new idea (free-form story or extracted from a document) into openidea/ideas/<slug>.md
 ---
 
-Muat skill `openidea` (Skill tool) buat baca section 3.2 (schema ide), section 7 (regenerasi INDEX.md) sebelum lanjut.
+Load the `openidea` skill (Skill tool) to read section 3.2 (idea schema), section 7 (INDEX.md regeneration) before proceeding.
 
-Input dari user (cerita bebas, atau path/isi dokumen MOM/transkrip): $ARGUMENTS
+Input from the user (free-form story, or a path/content of a meeting-notes/transcript document): $ARGUMENTS
 
-## Prasyarat
+## Prerequisite
 
-`openidea/BRIEF.md` harus ada. Kalau belum, stop dan arahkan ke `/openidea:init` dulu.
+`openidea/BRIEF.md` must exist. If not, stop and point the user to `/openidea:init` first.
 
-## Proses
+## Process
 
-1. **Deteksi mode input** — auto-detect dari jenis input:
-   - Dokumen panjang (MOM/transkrip/summary): ekstrak kandidat ide sebagai one-liner list → tampilkan ke user untuk direview → hanya yang di-approve dilanjutkan ke langkah 2.
-   - Cerita bebas: parse langsung, bisa multi-ide dalam satu batch.
-2. Untuk tiap ide yang lanjut: quick-check kemiripan terhadap `openidea/ideas/INDEX.md` (exact/near-exact match berdasarkan problem statement). Kalau ketemu kandidat mirip, tanya user dulu sebelum bikin file baru (update ide existing atau tetap buat baru).
-3. Structuring jadi 5Q (schema 3.2 di SKILL.md), sesuaikan `type: feature` atau `type: chore` (skip poin 3 "siapa yang pakai" untuk chore).
-4. Kalau input terlalu vague untuk mengisi field tertentu: isi `TBD` eksplisit di field itu, set `needs_clarification: true`. **Jangan mengarang.**
-5. Partial processing: kalau dalam satu batch ada 1 item ambigu, proses dulu yang jelas, baru tanya balik untuk yang ambigu (jangan blokir seluruh batch).
-6. Guard rail advisory: kalau ide baru relevan dengan milestone yang sudah punya folder di `openspec/changes/`, kasih notice ringan (bukan blocking).
+1. **Detect input mode** — auto-detect from the kind of input:
+   - Long document (meeting notes/transcript/summary): extract candidate ideas as a one-liner list → show them to the user for review → only approved ones continue to step 2.
+   - Free-form story: parse directly, can be multiple ideas in one batch.
+2. For each idea that continues: quick similarity check against `openidea/ideas/INDEX.md` (exact/near-exact match based on the problem statement). If a similar candidate is found, ask the user before creating a new file (update the existing idea or still create a new one).
+3. Structure into 5Q (schema 3.2 in SKILL.md), set `type: feature` or `type: chore` accordingly (skip point 3 "who uses it" for chore).
+4. If the input is too vague to fill a given field: fill that field with an explicit `TBD`, set `needs_clarification: true`. **Don't make things up.**
+5. Partial processing: if one item in a batch is ambiguous, process the clear ones first, then ask back about the ambiguous one (don't block the whole batch).
+6. Advisory guard rail: if a new idea appears relevant to a milestone that already has a folder under `openspec/changes/`, give a light notice (not blocking).
 
 ## Output
 
-- File baru `openidea/ideas/<slug>.md` per ide, status `captured`, `history: [{date: <today>, status: captured}]`.
-- Mode dokumen: arsipkan sumber asli ke `openidea/discovery/<sesi>.md`, isi field `source` di tiap ide hasil ekstraksi dokumen itu.
-- Regenerate `openidea/ideas/INDEX.md` (prosedur di SKILL.md section 7).
+- New file `openidea/ideas/<slug>.md` per idea, status `captured`, `history: [{date: <today>, status: captured}]`.
+- Document mode: archive the original source to `openidea/discovery/<session>.md`, fill the `source` field on each idea extracted from it.
+- Regenerate `openidea/ideas/INDEX.md` (procedure in SKILL.md section 7).

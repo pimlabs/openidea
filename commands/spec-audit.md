@@ -1,29 +1,29 @@
 ---
-description: Audit read-only drift antara openspec/changes/<milestone> vs proposals/ideas
+description: Read-only drift audit between openspec/changes/<milestone> and proposals/ideas
 ---
 
-Muat skill `openidea` (Skill tool) buat baca section 2, 3.4, 3.2 sebelum lanjut.
+Load the `openidea` skill (Skill tool) to read section 2, 3.4, 3.2 before proceeding.
 
-Argumen dari user: nama milestone target. $ARGUMENTS
+Arguments from the user: target milestone name. $ARGUMENTS
 
-## Prasyarat
+## Prerequisite
 
-Folder `openspec/changes/<milestone>` harus ada. Kalau tidak ada, stop dan beri tahu eksplisit.
+The `openspec/changes/<milestone>` folder must exist. If not, stop and say so explicitly.
 
-## Proses
+## Process
 
-1. Cek kelengkapan folder target: `proposal.md` + `design.md` + `tasks.md` semua ada?
-   - Kalau belum lengkap: laporkan sebagai **"masih in-progress"**, bukan melaporkan drift.
-2. Kalau lengkap, bandingkan scope OpenSpec vs `openidea/proposals/<approved terkait milestone>.md` + `openidea/ideas/` terkait — cari drift:
-   - scope hilang (ada di proposal/ideas, tidak ada di OpenSpec)
-   - scope tambahan (ada di OpenSpec, tidak ada di proposal/ideas)
-   - acceptance criteria tidak konsisten
-3. Cek juga: folder `openspec/changes/` yang direferensikan oleh `promoted_to` suatu ide — masih ada/aktif di sisi OpenSpec (belum di-archive/dibatalkan)? Kalau sudah di-archive/dibatalkan di sisi OpenSpec, flag untuk peninjauan ulang status ide terkait (bisa jadi perlu revert dari `promoted`).
+1. Check the target folder's completeness: are `proposal.md` + `design.md` + `tasks.md` all present?
+   - If incomplete: report it as **"still in progress"**, not as drift.
+2. If complete, compare the OpenSpec scope against `openidea/proposals/<approved for this milestone>.md` + the related `openidea/ideas/` — look for drift:
+   - missing scope (present in the proposal/ideas, absent from OpenSpec)
+   - added scope (present in OpenSpec, absent from the proposal/ideas)
+   - inconsistent acceptance criteria
+3. Also check: is the `openspec/changes/` folder referenced by an idea's `promoted_to` still active on the OpenSpec side (not yet archived/cancelled)? If it has been archived/cancelled on the OpenSpec side, flag the related idea's status for review (it may need to be reverted from `promoted`).
 
 ## Output
 
-Laporan drift + rekomendasi ke user. **Read-only — jangan ubah file apapun secara otomatis**, termasuk tidak mengubah status ide meski ditemukan drift.
+A drift report + recommendations for the user. **Read-only — never change any file automatically**, including not changing an idea's status even if drift is found.
 
-## Catatan
+## Note
 
-Command ini adalah entry point umpan balik teknis. Kalau lead engineer menemukan sesuatu secara teknis tidak feasible saat audit, catat temuan itu lewat `/openidea:capture` biasa (bukan command terpisah) — ini bisa memicu siklus revisi baru ke client lewat `/openidea:compile` kalau diperlukan.
+This command is an entry point for technical feedback. If a lead engineer finds something technically infeasible during the audit, record that finding via a regular `/openidea:capture` (not a separate command) — this can trigger a new revision cycle back to the client via `/openidea:compile` if needed.

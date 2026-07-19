@@ -1,6 +1,6 @@
 # OpenIdea
 
-Claude Code plugin buat kelola siklus hidup ide produk end-to-end secara file-based — dari visi produk (`BRIEF.md`), capture ide mentah, evaluasi & kategorisasi, penyusunan roadmap, sampai draft spec teknis ke [OpenSpec](https://github.com/Fission-AI/OpenSpec).
+A Claude Code plugin for managing a product idea lifecycle end-to-end, file-based — from product vision (`BRIEF.md`), raw idea capture, evaluation & categorization, roadmap planning, through to drafting technical specs into [OpenSpec](https://github.com/Fission-AI/OpenSpec).
 
 ## Install
 
@@ -9,27 +9,35 @@ Claude Code plugin buat kelola siklus hidup ide produk end-to-end secara file-ba
 /plugin install openidea@pimlabs
 ```
 
-## Command
+## Commands
 
-| Command | Fungsi |
+| Command | What it does |
 |---|---|
-| `/openidea:init` | Structuring visi produk → `openidea/BRIEF.md` |
-| `/openidea:capture` | Tangkap ide baru (cerita bebas atau ekstraksi dokumen) |
-| `/openidea:evaluate` | Evaluasi ide `captured` — overlap/konflik, rekomendasi status |
-| `/openidea:plan` | Susun ide `ready` ke `openidea/ROADMAP.md` |
-| `/openidea:spec-draft` | Generate proposal/design/tasks OpenSpec dari milestone |
-| `/openidea:compile` | Compile ide `ready` jadi narasi proposal client-facing |
-| `/openidea:export` | Paket teknis milestone untuk handoff eksternal |
-| `/openidea:spec-audit` | Audit read-only drift OpenSpec vs proposal/ideas |
+| `/openidea:init` | Structure a product vision → `openidea/BRIEF.md` |
+| `/openidea:capture` | Capture a new idea (free-form story or document extraction) |
+| `/openidea:evaluate` | Evaluate `captured` ideas — overlap/conflict, status recommendation |
+| `/openidea:plan` | Arrange `ready` ideas into `openidea/ROADMAP.md` |
+| `/openidea:spec-draft` | Generate an OpenSpec proposal/design/tasks from a milestone |
+| `/openidea:compile` | Compile `ready` ideas into a client-facing proposal narrative |
+| `/openidea:export` | Package a milestone's technical content for external handoff |
+| `/openidea:spec-audit` | Read-only drift audit — OpenSpec vs proposal/ideas |
 
-Detail lengkap filosofi, schema file, dan status lifecycle: lihat `skills/openidea/SKILL.md`.
+Full detail on the philosophy, file schemas, and status lifecycle: see `skills/openidea/SKILL.md`.
 
-## Struktur
+## Structure
 
 ```
-.claude-plugin/       manifest plugin + marketplace
-skills/openidea/      schema & prinsip (rujukan bersama semua command)
-commands/              8 command /openidea:*
+.claude-plugin/       plugin + marketplace manifest
+skills/openidea/      schema & principles (shared reference for all commands)
+commands/             8 commands, /openidea:*
 ```
 
-Setelah plugin dipakai di sebuah project, command-command di atas akan menulis state ke folder `openidea/` di root project tersebut.
+Once the plugin is used in a project, the commands above write state into an `openidea/` folder at that project's root.
+
+## Development
+
+```
+scripts/test.sh
+```
+
+Runs `claude plugin validate` plus a smoke test of all 8 `/openidea:*` commands via `--plugin-dir` from an empty directory, failing if any command doesn't resolve. Run it before every push.

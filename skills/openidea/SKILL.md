@@ -1,54 +1,54 @@
 ---
 name: openidea
-description: Kelola siklus hidup ide produk end-to-end secara file-based — dari visi produk (BRIEF.md), penangkapan ide mentah, evaluasi & kategorisasi, penyusunan roadmap, sampai draft spec teknis (OpenSpec). Trigger otomatis saat user menyebut "openidea", "capture ide", "roadmap produk", "proposal client", "BRIEF produk", atau menjalankan command /openidea:init, /openidea:capture, /openidea:evaluate, /openidea:plan, /openidea:spec-draft, /openidea:compile, /openidea:export, /openidea:spec-audit.
+description: Manage a product idea lifecycle end-to-end, file-based — from product vision (BRIEF.md), raw idea capture, evaluation & categorization, roadmap planning, through to technical spec drafting (OpenSpec). Auto-triggers when the user mentions "openidea", "capture idea", "product roadmap", "client proposal", "product brief", or runs /openidea:init, /openidea:capture, /openidea:evaluate, /openidea:plan, /openidea:spec-draft, /openidea:compile, /openidea:export, /openidea:spec-audit.
 ---
 
 # OpenIdea
 
-Sistem manajemen ide produk file-based. State hidup di markdown di bawah folder `openidea/` pada root project. Skill ini adalah rujukan tunggal untuk schema file, prinsip desain, dan prosedur regenerasi index yang dipakai bersama oleh semua command `/openidea:*`.
+A file-based product idea management system. State lives in markdown under an `openidea/` folder at the project root. This skill is the single reference for file schemas, design principles, and the index-regeneration procedure shared by all `/openidea:*` commands.
 
-Command individual ada di `commands/*.md` pada repo plugin ini. Tiap command file self-contained (prasyarat + proses + output), tapi tetap merujuk ke dokumen ini untuk detail schema — jangan duplikasi schema di command file, cukup pointer ke section terkait di sini.
+Individual commands live in `commands/*.md` in this plugin's repo. Each command file is self-contained (prerequisites + process + output), but still refers back to this document for schema details — don't duplicate schema in command files, just point to the relevant section here.
 
-## 1. Filosofi Inti
+## 1. Core Philosophy
 
-- **File-based** — semua state di markdown, git-friendly, bisa di-diff, dibaca tanpa tools tambahan.
-- **Human decides, Claude drafts** — Claude structuring & rekomendasi; keputusan final di tangan pengguna. Jangan pernah mengubah status ide/milestone tanpa review pengguna, kecuali eksplisit diminta ("tandai Milestone 1 approved").
-- **Independen dari OpenSpec** — OpenIdea tidak pernah menulis ke `openspec/changes/` atau `openspec/specs/` secara langsung kecuali lewat `/openidea:spec-draft`. Tidak bergantung pada skill `openspec-drafter` generic.
-- **Portable** — seluruh isi `openidea/` harus dipahami manusia atau AI lain tanpa konteks percakapan tambahan. Skill ini didistribusikan sebagai plugin project (`/plugin install openidea@pimlabs`), bukan skill personal per-user.
-- **Async-only** — didesain untuk kerja sendiri atau handoff bergiliran, bukan simultaneous multi-user editing real-time. Git conflict pada file auto-generated (`ideas/INDEX.md`) diselesaikan dengan regenerate ulang, bukan manual merge baris-per-baris.
-- **Nothing disappears** — status berubah, file tidak pernah dihapus/ditimpa tanpa jejak. Riwayat tercatat di field `history[]`.
+- **File-based** — all state lives in markdown, git-friendly, diffable, readable without extra tools.
+- **Human decides, Claude drafts** — Claude structures content and makes recommendations; the final decision always rests with the user. Never change an idea's/milestone's status without user review, unless explicitly requested ("mark Milestone 1 approved").
+- **Independent from OpenSpec** — OpenIdea never writes directly to `openspec/changes/` or `openspec/specs/` except via `/openidea:spec-draft`. It doesn't depend on the generic `openspec-drafter` skill.
+- **Portable** — everything under `openidea/` must be understandable by a human or another AI without additional conversational context. This skill is distributed as an installable plugin, not a personal skill.
+- **Async-only** — designed for solo work or turn-based handoff across people/time, not simultaneous real-time multi-user editing. Git conflicts on auto-generated files (`ideas/INDEX.md`) are resolved by regenerating, not manual line-by-line merge.
+- **Nothing disappears** — status changes, but files are never deleted or overwritten without a trace. History is always recorded in the `history[]` field.
 
-## 2. Struktur Folder
+## 2. Folder Structure
 
 ```
 project/
 ├── openidea/
-│   ├── BRIEF.md                 ← vision produk, statis, punya schema_version & project_status
-│   ├── ROADMAP.md               ← milestone, urutan eksekusi, approval per-milestone
+│   ├── BRIEF.md                 ← product vision, static, has schema_version & project_status
+│   ├── ROADMAP.md               ← milestones, execution order, per-milestone approval
 │   ├── ideas/
-│   │   ├── INDEX.md             ← auto-regenerate dari scan filesystem, ringkas
-│   │   ├── <slug>.md            ← 5Q + frontmatter lengkap (ide aktif)
-│   │   ├── assets/<slug>/       ← lampiran visual opsional
+│   │   ├── INDEX.md             ← auto-regenerated from a filesystem scan, summarized
+│   │   ├── <slug>.md            ← 5Q + full frontmatter (active idea)
+│   │   ├── assets/<slug>/       ← optional visual attachments
 │   │   ├── archive/
 │   │   │   └── <slug>.md        ← status: killed, merged, split
 │   │   └── promoted/
-│   │       └── <slug>.md        ← status: promoted (sudah jadi OpenSpec)
+│   │       └── <slug>.md        ← status: promoted (already turned into an OpenSpec change)
 │   ├── proposals/
-│   │   └── v1.md, v2.md, ...    ← dokumen narasi client-facing, versioned
+│   │   └── v1.md, v2.md, ...    ← versioned, client-facing narrative documents
 │   ├── exports/
-│   │   └── <milestone-slug>-vN.md  ← paket teknis untuk handoff eksternal
+│   │   └── <milestone-slug>-vN.md  ← technical package for external handoff
 │   └── discovery/
-│       └── <sesi>.md            ← arsip mentah (MOM, transkrip, BRIEF lama)
-└── openspec/                    ← TIDAK PERNAH DISENTUH langsung, kecuali via /openidea:spec-draft
+│       └── <session>.md         ← raw archive (meeting notes, transcripts, old BRIEFs)
+└── openspec/                    ← NEVER touched directly, except via /openidea:spec-draft
     ├── changes/
     └── specs/
 ```
 
-Semua path folder relatif ke root `openidea/` di root project. `openspec/` milik tooling lain — OpenIdea hanya *membaca* dari situ (misal cek folder ada/belum), tidak pernah menulis kecuali lewat `/openidea:spec-draft`.
+All folder paths are relative to the `openidea/` root at the project root. `openspec/` belongs to another tool — OpenIdea only *reads* from it when needed (e.g. checking whether a folder already exists), never writes to it except via `/openidea:spec-draft`.
 
-Skill dan command sendiri **tidak** hidup di project ini — mereka dimuat dari plugin `openidea` (install lewat `/plugin install openidea@pimlabs`), repo terpisah dengan layout `skills/openidea/` + `commands/*.md` di root plugin.
+Skill and command files don't live in this project either — they're loaded from the `openidea` plugin (installed via `/plugin install openidea@pimlabs`), a separate repo laid out as `skills/openidea/` + `commands/*.md` at the plugin root.
 
-## 3. Skema File
+## 3. File Schemas
 
 ### 3.1 `BRIEF.md`
 
@@ -59,15 +59,15 @@ project_status: active   # active | cancelled
 ---
 ```
 
-Body (naratif, ditulis oleh `/openidea:init`):
-- **Vision** — problem besar & tujuan produk
-- **Target Users** — siapa yang pakai
-- **Core Value Prop** — nilai inti yang ditawarkan
-- **Fitur Besar** — checklist kasar, belum di-detail
-- **Non-goals** — batasan level produk
-- **Constraints** — batasan teknis/waktu/infrastruktur
+Body (narrative, written by `/openidea:init`):
+- **Vision** — the big problem & the product's purpose
+- **Target Users** — who uses it
+- **Core Value Prop** — the core value offered
+- **Key Features** — a rough checklist, not yet detailed
+- **Non-goals** — product-level boundaries
+- **Constraints** — technical/time/infrastructure constraints
 
-Ditulis sekali di awal, jarang direvisi. Revisi total → salin versi lama ke `discovery/brief-v{N}-superseded.md` sebelum ditulis ulang. Tidak pernah overwrite polos.
+Written once at the start, rarely revised. A full rewrite → copy the old version to `discovery/brief-v{N}-superseded.md` before overwriting. Never a plain overwrite.
 
 ### 3.2 `ideas/<slug>.md`
 
@@ -79,27 +79,27 @@ type: feature               # feature | chore
 category: Booking & Scheduling
 created: 2026-07-16
 updated: 2026-07-20
-source: discovery/2026-07-16-session.md     # opsional, dari /openidea:capture mode import
-replaces: "Sistem booking manual via Excel"   # opsional
-depends_on: []                                 # opsional, list id ide lain
-needs_clarification: false                      # true jika hasil capture dari input terlalu vague
-merged_into: null                                # diisi jika status: merged
-split_into: []                                    # diisi jika status: split
-promoted_to: null                                  # path folder openspec/changes/<milestone>/
-promoted_with: []                                   # id ide lain yang dipromote bersamaan
-triage_note: null                                    # WAJIB diisi jika status: killed
+source: discovery/2026-07-16-session.md     # optional, set by /openidea:capture import mode
+replaces: "Manual booking via spreadsheet"    # optional
+depends_on: []                                 # optional, list of other idea ids
+needs_clarification: false                      # true if captured from input too vague to fill in fully
+merged_into: null                                # set if status: merged
+split_into: []                                    # set if status: split
+promoted_to: null                                  # openspec/changes/<milestone>/ folder path
+promoted_with: []                                   # other idea ids promoted together
+triage_note: null                                    # REQUIRED if status: killed
 history:
   - {date: 2026-07-16, status: captured}
   - {date: 2026-07-18, status: ready}
 ---
 ```
 
-Body (5Q, disederhanakan untuk `type: chore` — skip poin 3):
-1. **Problem** — masalah apa yang diselesaikan
-2. **Why now** — kenapa penting sekarang
-3. **Siapa yang pakai** — *(skip untuk `type: chore`)*
-4. **Done looks like** — kondisi selesai, terukur jika bisa
-5. **Out of scope** — apa yang sengaja tidak dikerjakan
+Body (5Q, simplified for `type: chore` — skip point 3):
+1. **Problem** — what problem this solves
+2. **Why now** — why it matters now
+3. **Who uses it** — *(skip for `type: chore`)*
+4. **Done looks like** — the completion state, measurable if possible
+5. **Out of scope** — what's deliberately not being done
 
 ### 3.3 `ROADMAP.md`
 
@@ -111,20 +111,20 @@ Body (5Q, disederhanakan untuk `type: chore` — skip poin 3):
 **Approved in**: proposals/v3.md
 
 - wa-booking
-- dashboard-okupansi-basic
+- occupancy-dashboard-basic
 
 ## Milestone 2 — Finance Module
 **Status**: draft
 
-- integrasi-billing-asuransi
+- billing-insurance-integration
 ```
 
-Aturan:
-- Urutan heading atas→bawah = urutan eksekusi.
-- Nama milestone **harus** identik dengan nama folder `openspec/changes/<nama>/` nanti. Slug dari nama milestone harus unik (divalidasi di `/openidea:plan`).
-- Status per milestone: `draft` | `approved` — bukan status per-dokumen proposal.
-- **Approved in** hanya diisi saat status `approved`, menunjuk versi proposal spesifik.
-- Field ini di-reset (`status: draft`, `approved_in: null`) otomatis jika ada ide dipindah masuk/keluar milestone tersebut setelah approved.
+Rules:
+- Heading order top-to-bottom = execution order.
+- The milestone name **must** be identical to the folder name later used at `openspec/changes/<name>/`. The slug derived from the milestone name must be unique (validated in `/openidea:plan`).
+- Per-milestone status: `draft` | `approved` — not a per-document proposal status.
+- **Approved in** is only filled in when status is `approved`, pointing to the specific proposal version where it was approved.
+- This field auto-resets (`status: draft`, `approved_in: null`) if an idea is moved into/out of that milestone after it was approved.
 
 ### 3.4 `proposals/vN.md`
 
@@ -132,88 +132,88 @@ Aturan:
 ---
 version: 3
 status: draft            # draft | revision_requested | approved | superseded
-compiled_from_roadmap_snapshot: "<hash atau timestamp ROADMAP.md saat compile>"
-milestones_covered: [Core Booking]   # bisa scoped
+compiled_from_roadmap_snapshot: "<hash or timestamp of ROADMAP.md at compile time>"
+milestones_covered: [Core Booking]   # can be scoped
 created: 2026-07-20
 ---
 ```
 
-Body: narasi presentable, dikelompokkan per `category`, urutan sesuai `ROADMAP.md`. Jika `status: superseded`, baris pertama body **wajib**:
-> ⚠️ Dokumen ini sudah digantikan oleh versi lebih baru. Lihat `proposals/` untuk versi terkini.
+Body: presentable narrative, grouped by `category`, ordered per `ROADMAP.md`. If `status: superseded`, the first line of the body **must** be:
+> ⚠️ This document has been superseded by a newer version. See `proposals/` for the current one.
 
 ### 3.5 `ideas/INDEX.md`
 
-Auto-regenerate dari scan filesystem — bukan sumber kebenaran independen, **jangan diedit manual**. Lihat section 7 untuk prosedur regenerasi.
+Auto-regenerated from a filesystem scan — not an independent source of truth, **never edit manually**. See section 7 for the regeneration procedure.
 
-### 3.6 `discovery/<sesi>.md`
+### 3.6 `discovery/<session>.md`
 
-Arsip mentah apa adanya (transkrip MOM, summary, atau `BRIEF.md` lama yang di-supersede). **Tidak pernah** masuk ke `exports/` atau `proposals/` dalam bentuk apapun — prinsip keamanan data, berpotensi berisi info sensitif client.
+Raw archive, as-is (meeting notes, summaries, or an old `BRIEF.md` being superseded). **Never** included in `exports/` or `proposals/` in any form — a data-security principle, since it can contain sensitive client information.
 
 ### 3.7 `exports/<milestone-slug>-vN.md`
 
-Paket kurasi untuk pihak eksternal tanpa akses repo. Auto-versioned, tidak overwrite. Berisi: konteks relevan `BRIEF.md` + scope milestone dari `ROADMAP.md` + isi lengkap tiap `ideas/<slug>.md` terkait. Selalu kecualikan `discovery/`. Wajib self-explanatory (header cara baca dokumen) untuk pembaca tanpa AI. Mendukung parameter bahasa opsional (translasi hanya di file export, bukan source `ideas/`).
+A curated package for external parties without repo access. Auto-versioned, never overwritten. Contains: relevant context from `BRIEF.md` + milestone scope from `ROADMAP.md` + the full content of each related `ideas/<slug>.md`. Always excludes `discovery/`. Must be self-explanatory (a "how to read this" header) for readers without any AI/skill. Supports an optional language parameter (translation applies only to the export file, not the `ideas/` source).
 
 ## 4. Command Index
 
-| Command | Prasyarat | Output |
+| Command | Prerequisite | Output |
 |---|---|---|
 | `/openidea:init` | — | `BRIEF.md` |
-| `/openidea:capture` | `BRIEF.md` ada | `ideas/<slug>.md` baru, status `captured` |
-| `/openidea:evaluate` | ≥1 ide `captured` | update frontmatter ide, pindah ke `archive/` jika final |
-| `/openidea:plan` | ≥1 ide `ready` | `ROADMAP.md` |
-| `/openidea:spec-draft` | `openspec/` ada, milestone target punya ≥1 ide `ready` | `openspec/changes/<milestone>/{proposal,design,tasks}.md`, ide → `promoted` |
-| `/openidea:compile` | ada ide `ready` di `ROADMAP.md` | `proposals/vN.md` baru |
+| `/openidea:capture` | `BRIEF.md` exists | new `ideas/<slug>.md`, status `captured` |
+| `/openidea:evaluate` | ≥1 idea `captured` | idea frontmatter updated, moved to `archive/` if final |
+| `/openidea:plan` | ≥1 idea `ready` | `ROADMAP.md` |
+| `/openidea:spec-draft` | `openspec/` exists, target milestone has ≥1 idea `ready` | `openspec/changes/<milestone>/{proposal,design,tasks}.md`, idea → `promoted` |
+| `/openidea:compile` | idea `ready` exists in `ROADMAP.md` | new `proposals/vN.md` |
 | `/openidea:export` | — | `exports/<milestone-slug>-vN.md` |
-| `/openidea:spec-audit` | folder `openspec/changes/<milestone>` ada | laporan drift (read-only) |
+| `/openidea:spec-audit` | `openspec/changes/<milestone>` folder exists | drift report (read-only) |
 
-Detail proses tiap command: baca file command-nya masing-masing di `commands/`.
+For process detail on each command, read its file in `commands/`.
 
-Catatan: `/openidea:release` dan `/openidea:list` **bukan** command terpisah.
-- Approval milestone: instruksi natural ("tandai Milestone 1 approved dari v3") → ubah `status`+`approved_in` di `ROADMAP.md`.
-- Pertanyaan list ("ide apa yang ready?", "mana yang di-archive?"): jawab langsung dari `ideas/INDEX.md`.
+Note: `/openidea:release` and `/openidea:list` are **not** separate commands.
+- Milestone approval: a natural instruction ("mark Milestone 1 approved from v3") → update `status`+`approved_in` in `ROADMAP.md`.
+- Listing questions ("which ideas are ready?", "what's archived?"): answer directly from `ideas/INDEX.md`.
 
-## 5. Status Lifecycle (per ide)
+## 5. Status Lifecycle (per idea)
 
 ```
-captured ──┬──> ready ──> (masuk milestone, approved) ──> promoted
+captured ──┬──> ready ──> (added to a milestone, approved) ──> promoted
            ├──> parked
            ├──> merged (+ merged_into)
-           └──> killed (+ triage_note, wajib)
+           └──> killed (+ triage_note, required)
 ```
 
-`split` adalah status tambahan: ide besar dipecah, dicatat via `split_into`, dipindah ke `archive/` (bukan "mati", tapi "digantikan entitas baru").
+`split` is an additional status: a large idea gets broken up, recorded via `split_into`, moved to `archive/` (not "dead", but "replaced by new entities").
 
-Semua status non-aktif bisa dikembalikan ("revived"/"corrected") ke `captured`, dengan entry baru di `history[]` yang mencatat alasan pengembalian — tidak menghapus jejak keputusan sebelumnya.
+Any inactive status can be brought back ("revived"/"corrected") to `captured`, with a new `history[]` entry recording the reason for reviving it — without erasing the trace of the earlier decision.
 
-## 6. Prinsip Cross-Cutting
+## 6. Cross-Cutting Principles
 
-| Kategori | Prinsip |
+| Category | Principle |
 |---|---|
-| Keamanan | `discovery/` tidak pernah masuk `exports/` atau `proposals/` dalam bentuk apapun. |
-| Resilience | Kegagalan proses di tengah command terisolasi per-file, bukan corrupt total. `ideas/INDEX.md` selalu di-regenerate dari scan filesystem nyata tiap sesi baru — otomatis "menyembuhkan" inkonsistensi. |
-| Skala | `ideas/INDEX.md` default hanya tampilkan detail ide aktif; `archive/`/`promoted/` cukup ringkasan angka. |
-| Versioning skema | `schema_version` di `BRIEF.md`. Command yang baca file harus backward-compatible — skema versi lama, isi field baru dengan default aman, jangan gagal total. |
-| Kolaborasi | Async-only. Git conflict pada file auto-generated diselesaikan dengan regenerate ulang, bukan manual-resolve baris per baris. |
-| Traceability | Tidak ada file hilang tanpa jejak. `killed`/`merged`/`split` tetap di `archive/` dengan alasan tercatat. Versi `proposals/` dan `BRIEF.md` lama diarsip, bukan ditimpa. |
-| Non-fitur (chore) | `type: chore` pakai 5Q sederhana, dikecualikan dari `/openidea:compile` (client-facing), tetap disertakan di `/openidea:export` (paket teknis). |
+| Security | `discovery/` is never included in `exports/` or `proposals/` in any form. |
+| Resilience | A failure mid-command is isolated per-file, not total corruption. `ideas/INDEX.md` is always regenerated from a real filesystem scan on every new session, not assumed prior state — this automatically "heals" inconsistencies. |
+| Scale | `ideas/INDEX.md` by default only shows detail for active ideas; `archive/`/`promoted/` are represented as summary counts only. |
+| Schema versioning | `schema_version` lives in `BRIEF.md`. Any command reading files must be backward-compatible — on an old schema version, fill new fields with safe defaults, don't fail outright. |
+| Collaboration | Async-only. Git conflicts on auto-generated files are resolved by regenerating, not manual line-by-line resolution. |
+| Traceability | No file disappears without a trace. `killed`/`merged`/`split` stay in `archive/` with the reason recorded. Old `proposals/` and `BRIEF.md` versions are archived, not overwritten. |
+| Non-feature (chore) | `type: chore` uses the simplified 5Q, is excluded from `/openidea:compile` (client-facing), but still included in `/openidea:export` (technical package). |
 
-## 7. Prosedur Regenerasi `ideas/INDEX.md`
+## 7. `ideas/INDEX.md` Regeneration Procedure
 
-Dipanggil oleh `/openidea:capture`, `/openidea:evaluate`, `/openidea:plan`, `/openidea:spec-draft` setelah mengubah state ide — dan boleh dipanggil standalone kapan saja untuk "menyembuhkan" inkonsistensi.
+Invoked by `/openidea:capture`, `/openidea:evaluate`, `/openidea:plan`, `/openidea:spec-draft` after changing idea state — and may be invoked standalone at any time to "heal" inconsistencies.
 
-1. Scan filesystem nyata: `ideas/*.md` (aktif), `ideas/archive/*.md`, `ideas/promoted/*.md`. Jangan percaya cache/asumsi state sebelumnya.
-2. Tampilkan detail ringkas untuk semua ide aktif (`captured`, `ready`, `parked`): id, status, category, updated.
-3. Untuk `archive/` dan `promoted/`, tampilkan **ringkasan angka saja** (misal: "47 archived, 32 promoted — lihat folder terkait").
-4. Section **"Ready tapi belum di-plan"** — ide `ready` yang id-nya tidak muncul di `ROADMAP.md` manapun.
-5. Section **"Perlu klarifikasi"** — ide dengan `needs_clarification: true`.
-6. Section **"Anomali"** — flag:
-   - status ide tidak konsisten dengan lokasi file (misal `killed` tapi masih di `ideas/`, bukan `ideas/archive/`)
-   - `killed` tanpa `triage_note`
-   - `depends_on` menunjuk slug yang tidak ada
-7. Tulis ulang `ideas/INDEX.md` seluruhnya (bukan patch parsial) — file ini bukan sumber kebenaran independen.
+1. Scan the real filesystem: `ideas/*.md` (active), `ideas/archive/*.md`, `ideas/promoted/*.md`. Don't trust cache or prior assumed state.
+2. Show summarized detail for all active ideas (`captured`, `ready`, `parked`): id, status, category, updated.
+3. For `archive/` and `promoted/`, show **counts only** (e.g. "47 archived, 32 promoted — see the respective folder").
+4. Section **"Ready but not yet planned"** — `ready` ideas whose id doesn't appear in any `ROADMAP.md` milestone.
+5. Section **"Needs clarification"** — ideas with `needs_clarification: true`.
+6. Section **"Anomalies"** — flag:
+   - status inconsistent with the file's location (e.g. `killed` but still under `ideas/`, not `ideas/archive/`)
+   - `killed` without a `triage_note`
+   - `depends_on` pointing at a slug that doesn't exist
+7. Rewrite `ideas/INDEX.md` in full (not a partial patch) — this file isn't an independent source of truth.
 
-## 8. Catatan Implementasi
+## 8. Implementation Notes
 
-- Tiap command **wajib** validasi prasyarat sebelum eksekusi, dan gagal dengan pesan jelas jika tidak terpenuhi — bukan silent failure atau asumsi.
-- Prioritaskan guard rail *blocking* (circular dependency langsung, milestone kosong saat spec-draft, `openspec/` belum ada) di atas guard rail *advisory* (observasi revisi berulang, notice overlap kategori). Advisory tidak boleh memblokir alur kerja.
-- Kalau ambiguitas muncul saat eksekusi command, tanya pengguna — jangan berasumsi atau mengarang isi field.
+- Every command **must** validate its prerequisites before executing, and fail with a clear message if unmet — never silent failure or assumption.
+- Prioritize *blocking* guard rails (direct circular dependency, empty milestone at spec-draft, missing `openspec/`) over *advisory* ones (repeated-revision observation, category-overlap notice). Advisory checks must never block the workflow.
+- If ambiguity comes up during execution, ask the user — don't assume or make up field content.

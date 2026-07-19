@@ -1,23 +1,23 @@
 ---
-description: Susun ide ready ke milestone di openidea/ROADMAP.md
+description: Arrange ready ideas into milestones in openidea/ROADMAP.md
 ---
 
-Muat skill `openidea` (Skill tool) buat baca section 3.3 (schema ROADMAP.md) sebelum lanjut.
+Load the `openidea` skill (Skill tool) to read section 3.3 (`ROADMAP.md` schema) before proceeding.
 
-Argumen dari user (opsional, nama milestone/reprioritisasi spesifik): $ARGUMENTS
+Arguments from the user (optional, milestone name / specific reprioritization): $ARGUMENTS
 
-## Prasyarat
+## Prerequisite
 
-Minimal 1 ide berstatus `ready`. Kalau tidak ada, stop dan arahkan ke `/openidea:evaluate` dulu.
+At least 1 idea with status `ready`. If none, stop and point the user to `/openidea:evaluate` first.
 
-## Proses
+## Process
 
-1. Susun ide `ready` ke milestone di `openidea/ROADMAP.md` (buat baru atau update existing).
-2. Validasi nama milestone menghasilkan slug unik — tidak collide dengan milestone lain. Kalau collide, tanya user nama alternatif.
-3. Cek circular dependency di **level agregat milestone** (bukan cuma per-ide): kalau ada ide di milestone belakangan jadi prasyarat (`depends_on`) ide di milestone duluan, flag untuk ditinjau ulang urutannya — jangan otomatis reorder tanpa konfirmasi.
-4. Kalau milestone yang mau di-rename sudah pernah di-`spec-draft` (ada ide berstatus `promoted` di dalamnya): **warning dulu** sebelum lanjut — rename di ROADMAP tidak otomatis mengubah nama folder OpenSpec yang sudah ada, jadi akan terjadi mismatch nama.
-5. Kalau ide dipindah antar milestone dan salah satu milestone-nya sudah `approved`: reset status approval milestone terkait (`status: draft`, `approved_in: null`) dan beri notice ke user kenapa itu terjadi.
+1. Arrange `ready` ideas into milestones in `openidea/ROADMAP.md` (create new or update existing).
+2. Validate that the milestone name produces a unique slug — no collision with another milestone. If it collides, ask the user for an alternative name.
+3. Check circular dependency at the **aggregate milestone level** (not just per-idea): if an idea in a later milestone is a prerequisite (`depends_on`) for an idea in an earlier milestone, flag it for the ordering to be reviewed — don't auto-reorder without confirmation.
+4. If the milestone being renamed has already gone through `spec-draft` (has an idea with status `promoted` inside it): **warn first** before proceeding — renaming in ROADMAP doesn't automatically rename the existing OpenSpec folder, so a name mismatch will result.
+5. If an idea is moved between milestones and one of them is already `approved`: reset that milestone's approval status (`status: draft`, `approved_in: null`) and notify the user why.
 
 ## Output
 
-`openidea/ROADMAP.md` (create/update). Urutan heading atas→bawah = urutan eksekusi yang disepakati.
+`openidea/ROADMAP.md` (create/update). Heading order top-to-bottom = the agreed execution order.
