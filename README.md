@@ -41,3 +41,9 @@ scripts/test.sh
 ```
 
 Runs `claude plugin validate` plus a smoke test of all 8 `/openidea:*` commands via `--plugin-dir` from an empty directory, failing if any command doesn't resolve. Run it before every push.
+
+See `CONTRIBUTING.md` for the full contribution/versioning workflow.
+
+## License
+
+[MIT](LICENSE)
