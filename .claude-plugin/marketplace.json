@@ -1,6 +1,6 @@
 {
-  "name": "openidea-marketplace",
-  "description": "Marketplace pribadi untuk plugin openidea — manajemen siklus ide produk file-based.",
+  "name": "pimlabs",
+  "description": "Marketplace plugin pimlabs.",
   "owner": { "name": "Eko Dedy Purnomo" },
   "plugins": [
     {

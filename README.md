@@ -6,7 +6,7 @@ Claude Code plugin buat kelola siklus hidup ide produk end-to-end secara file-ba
 
 ```
 /plugin marketplace add pimlabs/openidea
-/plugin install oi@openidea-marketplace
+/plugin install oi@pimlabs
 ```
 
 ## Command
