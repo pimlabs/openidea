@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide — OpenIdea</title>
+<meta name="description" content="Full usage guide for OpenIdea — how-to scenarios, command reference, do/don't, edge cases, and design rationale.">
+<style>
+:root {
+  --bg: #ffffff;
+  --surface: #f6f7f9;
+  --border: #e3e6ea;
+  --text: #14171a;
+  --muted: #5b6572;
+  --dim: #8a93a0;
+  --accent: #2f6feb;
+  --accent-soft: #eaf1ff;
+  --code-bg: #0f1115;
+  --code-text: #e6e9ef;
+  --green: #1a7f4e;
+  --green-soft: #e6f6ee;
+  --red: #b3261e;
+  --red-soft: #fdecea;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1016;
+    --surface: #14171e;
+    --border: #262b34;
+    --text: #eef1f5;
+    --muted: #a4acb8;
+    --dim: #6b7481;
+    --accent: #5b9bff;
+    --accent-soft: #16233d;
+    --code-bg: #0a0c10;
+    --code-text: #e6e9ef;
+    --green: #4fd493;
+    --green-soft: #10261c;
+    --red: #ff8a80;
+    --red-soft: #2b1614;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+}
+code, pre, .mono { font-family: "SF Mono", Consolas, Menlo, Monaco, monospace; }
+a { color: var(--accent); }
+
+nav.top {
+  border-bottom: 1px solid var(--border);
+  padding: 18px 0;
+  position: sticky; top: 0; background: var(--bg); z-index: 10;
+}
+.nav-inner { display: flex; align-items: center; justify-content: space-between; max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.brand { font-weight: 700; font-size: 1rem; text-decoration: none; color: var(--text); }
+.nav-links { display: flex; gap: 20px; align-items: center; }
+.nav-links a { color: var(--muted); text-decoration: none; font-size: .9rem; }
+.nav-links a:hover { color: var(--text); }
+
+.layout { max-width: 1120px; margin: 0 auto; padding: 40px 24px 80px; display: grid; grid-template-columns: 220px 1fr; gap: 48px; }
+aside.toc { position: sticky; top: 80px; align-self: start; font-size: .85rem; }
+aside.toc .grp { margin-bottom: 20px; }
+aside.toc .grp-title { color: var(--dim); font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; margin-bottom: 8px; }
+aside.toc a { display: block; color: var(--muted); text-decoration: none; padding: 3px 0; }
+aside.toc a:hover { color: var(--accent); }
+
+main { min-width: 0; }
+h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -.02em; margin: 0 0 8px; }
+.lede { color: var(--muted); margin: 0 0 40px; max-width: 640px; }
+section { padding-top: 8px; margin-bottom: 52px; scroll-margin-top: 80px; }
+h2 { font-size: 1.3rem; font-weight: 700; margin: 0 0 6px; }
+h2 .num { color: var(--dim); font-weight: 600; margin-right: 8px; }
+.section-intro { color: var(--muted); margin: 0 0 24px; max-width: 640px; }
+h3 { font-size: 1.02rem; margin: 28px 0 8px; }
+p { margin: 0 0 12px; color: var(--muted); }
+.card {
+  border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; background: var(--surface);
+}
+.card h3 { margin-top: 0; color: var(--text); }
+.card .path { font-size: .78rem; color: var(--dim); margin-bottom: 8px; }
+
+/* how-to */
+.howto { border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.howto h3 { margin-top: 0; }
+.howto ol { margin: 8px 0 0; padding-left: 20px; color: var(--muted); font-size: .92rem; }
+.howto li { margin-bottom: 6px; }
+.howto code { background: var(--accent-soft); color: var(--accent); padding: 1px 6px; border-radius: 5px; font-size: .85rem; }
+
+/* reference (accordion) */
+details.cmd {
+  border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden;
+}
+details.cmd summary {
+  cursor: pointer; padding: 14px 18px; font-weight: 600; list-style: none;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+details.cmd summary::-webkit-details-marker { display: none; }
+details.cmd summary .cmdname { color: var(--accent); font-family: "SF Mono", Consolas, Menlo, monospace; font-size: .92rem; }
+details.cmd summary .caret { color: var(--dim); transition: transform .15s; }
+details.cmd[open] summary .caret { transform: rotate(90deg); }
+details.cmd summary .oneliner { color: var(--muted); font-weight: 400; font-size: .85rem; flex: 1; }
+.cmd-body { padding: 0 18px 18px; font-size: .9rem; }
+.cmd-body dt { color: var(--dim); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; margin-top: 14px; }
+.cmd-body dd { margin: 4px 0 0; color: var(--muted); }
+.cmd-body code { background: var(--accent-soft); color: var(--accent); padding: 1px 6px; border-radius: 5px; font-size: .85rem; }
+
+/* do/don't */
+.dd-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.dd { border-radius: 10px; padding: 14px 16px; font-size: .87rem; }
+.dd-do { background: var(--green-soft); border: 1px solid transparent; }
+.dd-dont { background: var(--red-soft); border: 1px solid transparent; }
+.dd .tag { font-weight: 700; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 6px; }
+.dd-do .tag { color: var(--green); }
+.dd-dont .tag { color: var(--red); }
+.dd p { color: var(--text); margin: 0; font-size: .87rem; }
+.dd code { font-size: .82rem; }
+@media (max-width: 560px) { .dd-pair { grid-template-columns: 1fr; } }
+
+/* edge cases */
+details.edge {
+  border-bottom: 1px solid var(--border); padding: 14px 0;
+}
+details.edge summary {
+  cursor: pointer; font-weight: 600; list-style: none; font-size: .95rem;
+  display: flex; align-items: center; gap: 10px;
+}
+details.edge summary::-webkit-details-marker { display: none; }
+details.edge summary::before { content: "+"; color: var(--dim); font-weight: 700; width: 16px; }
+details.edge[open] summary::before { content: "–"; }
+.edge-body { padding: 10px 0 0 26px; color: var(--muted); font-size: .9rem; }
+.edge-body code { background: var(--accent-soft); color: var(--accent); padding: 1px 6px; border-radius: 5px; font-size: .82rem; }
+.edge-tag { display: inline-block; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 100px; margin-left: 8px; vertical-align: middle; }
+.edge-blocking { background: var(--red-soft); color: var(--red); }
+.edge-advisory { background: var(--accent-soft); color: var(--accent); }
+
+.principle-row { border-bottom: 1px solid var(--border); padding: 16px 0; }
+.principle-row h3 { margin: 0 0 4px; }
+.principle-row p { margin: 0; font-size: .92rem; }
+
+footer { border-top: 1px solid var(--border); padding: 32px 24px; text-align: center; }
+.footer-links a { color: var(--muted); text-decoration: none; font-size: .85rem; margin: 0 10px; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  aside.toc { position: static; display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="nav-inner">
+    <a href="index.html" class="brand">OpenIdea</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="https://github.com/pimlabs/openidea">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="toc">
+    <div class="grp">
+      <div class="grp-title">Guide</div>
+      <a href="#how-to">How-to</a>
+      <a href="#reference">Reference</a>
+      <a href="#do-dont">Do / Don't</a>
+      <a href="#edge-cases">Edge Cases</a>
+      <a href="#why">Why it's built this way</a>
+    </div>
+  </aside>
+
+  <main>
+    <h1>Guide</h1>
+    <p class="lede">Task-based walkthroughs, full command reference, concrete do/don't examples, and every edge case OpenIdea's guard rails actually handle. For the 2-minute pitch, see the <a href="index.html">home page</a>.</p>
+
+    <section id="how-to">
+      <h2><span class="num">01</span>How-to</h2>
+      <p class="section-intro">Real scenarios, not just command syntax. Each assumes you already have the plugin installed.</p>
+
+      <div class="howto">
+        <h3>Start a new project solo</h3>
+        <ol>
+          <li>Run <code>/openidea:init</code>, describe the product in your own words. It writes <code>openidea/BRIEF.md</code>.</li>
+          <li>Run <code>/openidea:capture</code> any time an idea comes to mind. Multiple ideas in one message are fine.</li>
+          <li>Once a few ideas pile up, run <code>/openidea:evaluate</code> — it checks for overlap/conflict and recommends which are <code>ready</code>.</li>
+          <li>Run <code>/openidea:plan</code> to group ready ideas into a milestone in <code>ROADMAP.md</code>.</li>
+          <li>When <code>openspec/</code> exists in the project, run <code>/openidea:spec-draft &lt;milestone&gt;</code> to generate the technical change.</li>
+        </ol>
+        <p style="margin-top:10px">No <code>compile</code>, <code>export</code>, or <code>spec-audit</code> needed — those only matter once someone outside the repo is involved.</p>
+      </div>
+
+      <div class="howto">
+        <h3>Turn meeting notes into ideas</h3>
+        <ol>
+          <li>Run <code>/openidea:capture</code> and paste in the transcript, MOM, or summary directly.</li>
+          <li>It extracts candidate ideas as a one-liner list first — nothing is written yet.</li>
+          <li>Review the list, say which ones to keep.</li>
+          <li>Only approved ideas become files; the source document is archived to <code>openidea/discovery/&lt;session&gt;.md</code> and linked via each idea's <code>source</code> field.</li>
+        </ol>
+      </div>
+
+      <div class="howto">
+        <h3>Handle two ideas that overlap or conflict</h3>
+        <ol>
+          <li><code>/openidea:evaluate</code> compares <strong>Problem</strong> and <strong>Who uses it</strong> across all ideas — active, archived, and promoted, not just active ones.</li>
+          <li>If it's genuine overlap (intersecting scope), it'll suggest merging or splitting.</li>
+          <li>If it's a conflict (contradicting requirements from different sources), it won't guess a resolution — it flags it and asks you directly.</li>
+        </ol>
+      </div>
+
+      <div class="howto">
+        <h3>Run a client-facing revision cycle</h3>
+        <ol>
+          <li>After <code>/openidea:plan</code>, run <code>/openidea:compile &lt;milestone&gt;</code> to generate a client-presentable narrative in <code>proposals/v1.md</code>.</li>
+          <li>Iterate: each new <code>compile</code> writes a new version — <code>v2.md</code>, <code>v3.md</code> — old ones are never overwritten.</li>
+          <li>Once the client signs off, tell Claude directly: "mark Milestone 1 approved from v3." No separate command for this.</li>
+          <li>Run <code>/openidea:spec-draft</code> to generate the technical change from the approved scope.</li>
+          <li>Anytime after, run <code>/openidea:spec-audit &lt;milestone&gt;</code> to check the OpenSpec output hasn't drifted from what was approved.</li>
+        </ol>
+      </div>
+
+      <div class="howto">
+        <h3>Hand off to a lead engineer without repo access</h3>
+        <ol>
+          <li>Run <code>/openidea:export &lt;milestone&gt;</code>. It bundles relevant <code>BRIEF.md</code> context, the milestone's scope, the approved proposal (if any), and every related idea's full detail into one self-explanatory file.</li>
+          <li><code>openidea/discovery/</code> is never included — export is safe to send externally even if your capture sessions contained sensitive client notes.</li>
+          <li>Unlike <code>compile</code>, <code>type: chore</code> ideas <em>are</em> included — the engineer needs the technical debt items, even if a client never sees them.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="reference">
+      <h2><span class="num">02</span>Reference</h2>
+      <p class="section-intro">Every command: prerequisite, what it does, what it writes. Click to expand.</p>
+
+      <details class="cmd">
+        <summary><span class="cmdname">/openidea:init</span><span class="oneliner">Structure a product vision into BRIEF.md</span><span class="caret">▸</span></summary>
+        <div class="cmd-body">
+          <dl>
+            <dt>Prerequisite</dt><dd>None. If <code>BRIEF.md</code> already exists, a full rewrite requires your confirmation and archives the old version to <code>discovery/brief-v{N}-superseded.md</code> first — never a silent overwrite.</dd>
+            <dt>Process</dt><dd>Structures your free-form story into Vision, Target Users, Core Value Prop, Key Features, Non-goals, Constraints. Won't invent details you didn't mention — asks back on important gaps.</dd>
+            <dt>Output</dt><dd><code>openidea/BRIEF.md</code>, <code>schema_version: 1</code>, <code>project_status: active</code>.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="cmd">
+        <summary><span class="cmdname">/openidea:capture</span><span class="oneliner">Capture a new idea from a story or a document</span><span class="caret">▸</span></summary>
+        <div class="cmd-body">
+          <dl>
+            <dt>Prerequisite</dt><dd><code>BRIEF.md</code> must exist.</dd>
+            <dt>Process</dt><dd>Auto-detects free-form vs. document input. Checks new ideas against <code>INDEX.md</code> for near-duplicates before creating a file. Fills unclear fields with an explicit <code>TBD</code> and sets <code>needs_clarification: true</code> rather than guessing. One ambiguous item in a batch doesn't block the rest.</dd>
+            <dt>Output</dt><dd>New <code>ideas/&lt;slug&gt;.md</code>, status <code>captured</code>. Document mode also archives the source to <code>discovery/</code>. Regenerates <code>INDEX.md</code>.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="cmd">
+        <summary><span class="cmdname">/openidea:evaluate</span><span class="oneliner">Review captured ideas, recommend status & category</span><span class="caret">▸</span></summary>
+        <div class="cmd-body">
+          <dl>
+            <dt>Prerequisite</dt><dd>≥1 idea with status <code>captured</code>.</dd>
+            <dt>Process</dt><dd>Detects overlap and conflict across active, archived, <em>and</em> promoted ideas. Validates <code>depends_on</code> structurally — a direct cycle blocks, a broken reference just gets flagged. Recommends status/category; you approve before anything is written.</dd>
+            <dt>Output</dt><dd>Updated idea frontmatter. <code>killed</code> always gets a <code>triage_note</code>. Category is required before a status can move to <code>ready</code>. Final-status ideas move to <code>archive/</code>.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="cmd">
+        <summary><span class="cmdname">/openidea:plan</span><span class="oneliner">Arrange ready ideas into ROADMAP.md milestones</span><span class="caret">▸</span></summary>
+        <div class="cmd-body">
+          <dl>
+            <dt>Prerequisite</dt><dd>≥1 idea with status <code>ready</code>.</dd>
+            <dt>Process</dt><dd>Validates the milestone name yields a unique slug. Checks circular dependency at the milestone level, not just per-idea. Warns before renaming a milestone that's already been spec-drafted.</dd>
+            <dt>Output</dt><dd><code>openidea/ROADMAP.md</code>. Moving an idea out of an <code>approved</code> milestone resets that milestone back to <code>draft</code>.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="cmd">
+        <summary><span class="cmdname">/openidea:spec-draft</span><span class="oneliner">Generate an OpenSpec change from a milestone</span><span class="caret">▸</span></summary>
+        <div class="cmd-body">
+          <dl>
+            <dt>Prerequisite</dt><dd><strong>Blocking:</strong> <code>openspec/</code> must already exist (OpenIdea never creates it). The target milestone needs ≥1 idea <code>ready</code>.</dd>
+            <dt>Process</dt><dd>Reads <code>BRIEF.md</code> + <code>ROADMAP.md</code> + the approved proposal (if one exists) + each idea's full 5Q detail. Works fine with no <code>proposals/</code> at all on the solo path. Won't overwrite an existing <code>openspec/changes/&lt;milestone&gt;/</code> — offers to append or leaves it to a manual merge.</dd>
+            <dt>Output</dt><dd><code>openspec/changes/&lt;milestone&gt;/{proposal,design,tasks}.md</code>. Related ideas move to <code>ideas/promoted/</code>, <code>promoted_to</code> filled in.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="cmd">
+        <summary><span class="cmdname">/openidea:compile</span><span class="oneliner">Compile ready ideas into a client-facing proposal</span><span class="caret">▸</span></summary>
+        <div class="cmd-body">
+          <dl>
+            <dt>Prerequisite</dt><dd>A <code>ready</code> idea already in <code>ROADMAP.md</code>.</dd>
+            <dt>Process</dt><dd>Groups ready ideas by <code>category</code>, orders per ROADMAP. Excludes <code>type: chore</code> — this document is for the client, not the engineer. Called 5+ times on the same milestone with nothing approved gets a light observation note (not a block).</dd>
+            <dt>Output</dt><dd>New <code>openidea/proposals/vN.md</code>. Old versions are never overwritten.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="cmd">
+        <summary><span class="cmdname">/openidea:export</span><span class="oneliner">Package a milestone for handoff outside the repo</span><span class="caret">▸</span></summary>
+        <div class="cmd-body">
+          <dl>
+            <dt>Prerequisite</dt><dd>None hard, but needs a milestone name.</dd>
+            <dt>Process</dt><dd>Bundles relevant BRIEF context, the milestone's ROADMAP scope, the approved proposal (if any), and full idea detail — <code>type: chore</code> included. Always excludes <code>discovery/</code> and unrelated milestones. Optional language parameter translates the export only, never the source <code>ideas/</code>.</dd>
+            <dt>Output</dt><dd><code>openidea/exports/&lt;milestone-slug&gt;-vN.md</code>, auto-versioned, self-explanatory for a reader with no AI.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="cmd">
+        <summary><span class="cmdname">/openidea:spec-audit</span><span class="oneliner">Read-only drift check — OpenSpec vs. source ideas</span><span class="caret">▸</span></summary>
+        <div class="cmd-body">
+          <dl>
+            <dt>Prerequisite</dt><dd><code>openspec/changes/&lt;milestone&gt;</code> must exist.</dd>
+            <dt>Process</dt><dd>Checks the folder is complete (proposal/design/tasks) before comparing anything — incomplete gets reported as "in progress," not drift. Compares OpenSpec scope against the approved proposal + ideas for missing scope, added scope, and inconsistent acceptance criteria. Also checks whether the referenced OpenSpec change has since been archived/cancelled.</dd>
+            <dt>Output</dt><dd>A drift report. <strong>Never writes anything</strong> — not even on finding drift.</dd>
+          </dl>
+        </div>
+      </details>
+    </section>
+
+    <section id="do-dont">
+      <h2><span class="num">03</span>Do / Don't</h2>
+      <p class="section-intro">The patterns that matter most in practice.</p>
+
+      <div class="dd-pair">
+        <div class="dd dd-do"><span class="tag">Do</span><p>Let <code>/openidea:evaluate</code> change an idea's status. It updates <code>history[]</code> and enforces the category-before-ready rule.</p></div>
+        <div class="dd dd-dont"><span class="tag">Don't</span><p>Hand-edit an idea's <code>status:</code> field directly. You'll skip the history entry and any validation that would've caught a problem.</p></div>
+      </div>
+
+      <div class="dd-pair">
+        <div class="dd dd-do"><span class="tag">Do</span><p>Treat <code>ideas/INDEX.md</code> as a read-only view. Re-run any core command, or just ask, to regenerate it.</p></div>
+        <div class="dd dd-dont"><span class="tag">Don't</span><p>Edit <code>ideas/INDEX.md</code> by hand — it's fully rewritten from a filesystem scan on the next command, so manual edits are silently discarded.</p></div>
+      </div>
+
+      <div class="dd-pair">
+        <div class="dd dd-do"><span class="tag">Do</span><p>Let a vague capture fill unclear fields with <code>TBD</code> and set <code>needs_clarification: true</code>.</p></div>
+        <div class="dd dd-dont"><span class="tag">Don't</span><p>Ask Claude to fill in plausible-sounding target numbers, users, or scope it wasn't told. Guessed content is worse than an explicit gap.</p></div>
+      </div>
+
+      <div class="dd-pair">
+        <div class="dd dd-do"><span class="tag">Do</span><p>Run <code>/openidea:spec-draft</code> straight from <code>ROADMAP.md</code> + <code>ideas/</code> on a solo project — <code>compile</code>/approval isn't required.</p></div>
+        <div class="dd dd-dont"><span class="tag">Don't</span><p>Force a <code>compile</code> → client-approval cycle when there's no client. It's overhead that exists only for the external-party path.</p></div>
+      </div>
+
+      <div class="dd-pair">
+        <div class="dd dd-do"><span class="tag">Do</span><p>Rename a milestone in <code>ROADMAP.md</code> before it's ever been spec-drafted — free to do, no side effects.</p></div>
+        <div class="dd dd-dont"><span class="tag">Don't</span><p>Rename a milestone after <code>spec-draft</code> already ran on it. The OpenSpec folder name won't follow — you'll get a mismatch between <code>ROADMAP.md</code> and <code>openspec/changes/</code>.</p></div>
+      </div>
+
+      <div class="dd-pair">
+        <div class="dd dd-do"><span class="tag">Do</span><p>Send a technical infeasibility finding through a normal <code>/openidea:capture</code> during a <code>spec-audit</code>.</p></div>
+        <div class="dd dd-dont"><span class="tag">Don't</span><p>Expect <code>spec-audit</code> to fix anything itself — it's read-only by design, always.</p></div>
+      </div>
+    </section>
+
+    <section id="edge-cases">
+      <h2><span class="num">04</span>Edge Cases</h2>
+      <p class="section-intro"><span class="edge-tag edge-blocking">Blocking</span> stops the command outright. <span class="edge-tag edge-advisory">Advisory</span> flags a note but never blocks your workflow.</p>
+
+      <details class="edge">
+        <summary>Running a command before <code>BRIEF.md</code> exists <span class="edge-tag edge-blocking">Blocking</span></summary>
+        <div class="edge-body">Every command except <code>/openidea:init</code> and <code>/openidea:export</code> depends on project context existing. <code>/openidea:capture</code> stops immediately and points you to <code>/openidea:init</code> — it won't create an idea in a vacuum.</div>
+      </details>
+
+      <details class="edge">
+        <summary><code>/openidea:spec-draft</code> before <code>openspec/</code> exists <span class="edge-tag edge-blocking">Blocking</span></summary>
+        <div class="edge-body">OpenIdea deliberately never bootstraps <code>openspec/</code> itself — that's a different tool's job. The command stops and tells you explicitly to run OpenSpec's own init first.</div>
+      </details>
+
+      <details class="edge">
+        <summary>A milestone with zero <code>ready</code> ideas at <code>spec-draft</code> time <span class="edge-tag edge-blocking">Blocking</span></summary>
+        <div class="edge-body">No empty proposals get generated. If nothing in the target milestone is <code>ready</code>, the command stops rather than producing a hollow <code>proposal.md</code>.</div>
+      </details>
+
+      <details class="edge">
+        <summary>Two ideas with a direct circular <code>depends_on</code> <span class="edge-tag edge-blocking">Blocking</span></summary>
+        <div class="edge-body">A → depends on B → depends on A is a structural error, not a judgment call. <code>/openidea:evaluate</code> stops and asks you to fix it before recommending any status. An indirect cycle (A→B→C→A) is caught the same way.</div>
+      </details>
+
+      <details class="edge">
+        <summary><code>depends_on</code> pointing at a slug that doesn't exist <span class="edge-tag edge-advisory">Advisory</span></summary>
+        <div class="edge-body">Unlike a cycle, a broken reference doesn't block — it's flagged in the evaluate output and in <code>INDEX.md</code>'s Anomalies section so you notice it, but doesn't stop you from moving other ideas forward.</div>
+      </details>
+
+      <details class="edge">
+        <summary>An idea is <code>needs_clarification: true</code> when it's promoted <span class="edge-tag edge-advisory">Advisory</span></summary>
+        <div class="edge-body">Nothing stops a vague idea from reaching <code>ready</code> or even <code>promoted</code> — the flag just travels with it. Once promoted, the open question typically resurfaces in <code>design.md</code>'s open-questions section instead of <code>INDEX.md</code>, since the idea's no longer "active."</div>
+      </details>
+
+      <details class="edge">
+        <summary>Moving an idea out of an already-<code>approved</code> milestone <span class="edge-tag edge-advisory">Advisory</span></summary>
+        <div class="edge-body"><code>/openidea:plan</code> resets that milestone's <code>status</code> back to <code>draft</code> and clears <code>approved_in</code> automatically, with a notice explaining why — the client-approved scope no longer matches what's actually in the milestone.</div>
+      </details>
+
+      <details class="edge">
+        <summary>Renaming a milestone that's already been spec-drafted <span class="edge-tag edge-advisory">Advisory</span></summary>
+        <div class="edge-body"><code>/openidea:plan</code> warns before proceeding: the existing <code>openspec/changes/&lt;old-name&gt;/</code> folder won't be renamed automatically, so the ROADMAP and OpenSpec folder name will diverge unless you handle that separately.</div>
+      </details>
+
+      <details class="edge">
+        <summary>A <code>merged_into</code> target that's itself <code>killed</code> <span class="edge-tag edge-advisory">Advisory</span></summary>
+        <div class="edge-body"><code>/openidea:evaluate</code> traverses the merge chain and surfaces this for review rather than leaving a dangling reference to a dead idea.</div>
+      </details>
+
+      <details class="edge">
+        <summary>Running <code>/openidea:spec-draft</code> against a milestone folder that already has content <span class="edge-tag edge-blocking">Blocking (soft)</span></summary>
+        <div class="edge-body">No silent overwrite of existing <code>openspec/changes/&lt;milestone&gt;/</code> files. You're offered a choice — append as a note, or handle the merge manually — rather than the command picking for you.</div>
+      </details>
+
+      <details class="edge">
+        <summary>An old <code>openspec/changes/</code> folder was archived on the OpenSpec side <span class="edge-tag edge-advisory">Advisory</span></summary>
+        <div class="edge-body"><code>/openidea:spec-audit</code> checks whether a <code>promoted_to</code> target still exists and is active. If OpenSpec has since archived or cancelled it, the idea's <code>promoted</code> status gets flagged for review — it may need to revert.</div>
+      </details>
+
+      <details class="edge">
+        <summary>Adding a new idea in the middle of an <code>/openidea:evaluate</code> session <span class="edge-tag edge-advisory">Advisory</span></summary>
+        <div class="edge-body">Fine to do — <code>/openidea:evaluate</code> isn't a locked mode. The new idea enters as <code>captured</code> but is deliberately not evaluated in that same pass, so it doesn't get judged half-formed.</div>
+      </details>
+
+      <details class="edge">
+        <summary>A schema field from an old <code>schema_version</code> is missing <span class="edge-tag edge-advisory">Advisory</span></summary>
+        <div class="edge-body">Every command is expected to be backward-compatible: fill missing fields with a safe default rather than failing outright on an older project.</div>
+      </details>
+    </section>
+
+    <section id="why">
+      <h2><span class="num">05</span>Why it's built this way</h2>
+      <p class="section-intro">The design decisions that shape everything above.</p>
+
+      <div class="principle-row">
+        <h3>Why markdown files instead of a database or app</h3>
+        <p>State that lives in git is diffable, mergeable in the ordinary git sense for most files, readable without any tooling, and survives the plugin itself being uninstalled. The one exception is <code>ideas/INDEX.md</code> — it's regenerated wholesale from a scan, so a git conflict on it is resolved by regenerating, not merging.</p>
+      </div>
+      <div class="principle-row">
+        <h3>Why Claude never changes status without asking</h3>
+        <p>Claude structures and recommends; every status transition, milestone approval, and full-rewrite is a human decision. This is why <code>/openidea:evaluate</code> presents recommendations and waits, rather than writing them straight to disk.</p>
+      </div>
+      <div class="principle-row">
+        <h3>Why OpenIdea won't bootstrap <code>openspec/</code> itself</h3>
+        <p>OpenSpec is a separate, independently-versioned tool. OpenIdea reads from it (to check whether a folder exists) and writes to it only through the single, explicit <code>/openidea:spec-draft</code> path — never as a side effect of any other command.</p>
+      </div>
+      <div class="principle-row">
+        <h3>Why <code>discovery/</code> is excluded from every handoff</h3>
+        <p>Raw meeting notes and transcripts can contain sensitive client information that was never meant to be redistributed. <code>compile</code>, <code>export</code>, and <code>proposals/</code> are built to never include it, without exception — not even partially.</p>
+      </div>
+      <div class="principle-row">
+        <h3>Why nothing is ever deleted</h3>
+        <p><code>killed</code>, <code>merged</code>, and <code>split</code> ideas move to <code>archive/</code> with a reason, not the trash. A decision that turns out to be wrong can be revived with a new <code>history[]</code> entry — the record of the earlier call stays intact instead of vanishing.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="index.html">Home</a>
+    <a href="https://github.com/pimlabs/openidea">Repository</a>
+    <a href="https://github.com/pimlabs/openidea/blob/main/skills/openidea/SKILL.md">Full schema reference</a>
+    <a href="https://github.com/pimlabs/openidea/blob/main/LICENSE">License</a>
+  </div>
+</footer>
+
+</body>
+</html>
