@@ -2,6 +2,10 @@
 
 A Claude Code plugin for managing a product idea lifecycle end-to-end, file-based — from product vision (`BRIEF.md`), raw idea capture, evaluation & categorization, roadmap planning, through to drafting technical specs into [OpenSpec](https://github.com/Fission-AI/OpenSpec).
 
+![OpenIdea demo: init, capture, evaluate, plan](docs/demo.gif)
+
+*A real run: `/openidea:init` → `/openidea:capture` → `/openidea:evaluate` (catches a real offline-first conflict and asks before proceeding) → `/openidea:plan`. Nothing staged — this is what the plugin actually outputs.*
+
 ## Install
 
 ```
