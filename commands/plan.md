@@ -10,6 +10,8 @@ Arguments from the user (optional, milestone name / specific reprioritization): 
 
 At least 1 idea with status `ready`. If none, stop and point the user to `/openidea:evaluate` first.
 
+Write every piece of prose in the project language (`language:` in `openidea/BRIEF.md`, default `en`); keep ids, frontmatter keys, enum values and section headings as the schema defines them (skill section 6, Language).
+
 ## Process
 
 1. Arrange `ready` ideas into milestones in `openidea/ROADMAP.md` (create new or update existing).

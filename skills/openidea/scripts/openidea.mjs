@@ -44,7 +44,7 @@ Options:
                  default output openidea/dashboard/client.html
   --out <file>   dashboard, report: output path
   --format <f>   report: md, pptx or pdf
-  --lang <l>     report: en or id
+  --lang <l>     prototype, report, dashboard: en or id (default: BRIEF's language, else en)
 `;
 
 function parseArgs(argv) {
@@ -77,6 +77,10 @@ export function main(argv) {
   const args = parseArgs(argv);
   const cmd = args._[0];
   if (!cmd || args.help || cmd === 'help') { console.log(HELP); return 0; }
+  if (args.lang) {
+    args.lang = String(args.lang).toLowerCase();
+    if (!LANGS[args.lang]) { console.error(`Unknown language "${args.lang}". Use ${Object.keys(LANGS).join(' or ')}.`); return 2; }
+  }
   const root = resolve(args.root || '.');
   const project = loadProject(root);
   const issues = validateProject(project);
@@ -114,8 +118,8 @@ export function main(argv) {
     if (!project.blueprint) { console.error('No openidea/blueprint/blueprint.json yet. Run /openidea:blueprint first.'); return 1; }
     const name = project.brief?.body?.match(/^#\s+(.+)$/m)?.[1];
     const user = join(project.dir, 'prototype', 'index.html'), review = join(project.dir, 'prototype', 'review.html');
-    write(user, renderPrototype(project, name, { mode: 'user' }));
-    write(review, renderPrototype(project, name, { mode: 'review' }));
+    write(user, renderPrototype(project, name, { mode: 'user', lang: args.lang }));
+    write(review, renderPrototype(project, name, { mode: 'review', lang: args.lang }));
     console.log(`Wrote ${user} (for real users: no meta) and ${review} (for the team: undefined behaviour in red).`);
     return 0;
   }
@@ -124,17 +128,15 @@ export function main(argv) {
     const format = String(args.format || 'md').toLowerCase();
     const render = { md: renderReportMd, pptx: renderReportPptx, pdf: renderReportPdf }[format];
     if (!render) { console.error(`Unknown format "${format}". Use md, pptx or pdf.`); return 2; }
-    const lang = args.lang ? String(args.lang).toLowerCase() : undefined;
-    if (lang && !LANGS[lang]) { console.error(`Unknown language "${lang}". Use ${Object.keys(LANGS).join(' or ')}.`); return 2; }
     const path = resolve(args.out || join(project.dir, 'reports', `report.${format}`));
-    write(path, render(project, { lang }));
+    write(path, render(project, { lang: args.lang }));
     console.log(`Wrote ${path}.`);
     return 0;
   }
   if (cmd === 'dashboard') {
     const mode = args.client ? 'client' : 'internal';
     const path = resolve(args.out || join(project.dir, 'dashboard', mode === 'client' ? 'client.html' : 'index.html'));
-    write(path, renderDashboard(project, issues, { mode }));
+    write(path, renderDashboard(project, issues, { mode, lang: args.lang }));
     console.log(`Wrote ${path} (${mode} view). Open it in a browser.`);
     return 0;
   }

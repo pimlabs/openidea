@@ -233,7 +233,37 @@ test('estimate: business rules cost time; a list with an undefined item is not f
 test('dashboard overview tells the story in order: product, users, what it does, delivery, clarity, decisions', () => {
   const html = renderDashboard(loadProject(FIXTURE), [], { mode: 'client' });
   // Sections are rendered client-side; check their order in the template.
-  const tpl = ['Who uses it and what they do', 'What it does', 'How it is delivered', 'How clear the definition is', 'What needs a decision'].map((t) => html.indexOf(`</span>${t}<`));
+  const tpl = ['h_users', 'h_what', 'h_plan', 'h_health', 'h_decide'].map((k) => html.indexOf(`</span>'+t('${k}')+'<`));
   assert.ok(tpl.every((x) => x > 0));
   assert.deepEqual([...tpl].sort((a, b) => a - b), tpl);
+});
+
+test('every string the dashboard and prototype show exists in every language', async () => {
+  const { DASH, PROTO } = await import('../skills/openidea/scripts/lib/i18n.mjs');
+  const src = (f) => readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'skills/openidea/scripts/lib', f), 'utf8');
+  for (const [file, dict, extra] of [['dashboard.mjs', DASH, ['openGaps1', 'openGapsN', 'highOpen1', 'highOpenN']], ['prototype.mjs', PROTO, []]]) {
+    const used = new Set([...src(file).matchAll(/\bt\('([A-Za-z0-9_]+)'/g)].map((m) => m[1]).concat(extra));
+    for (const lang of Object.keys(dict)) {
+      const missing = [...used].filter((k) => dict[lang][k] == null);
+      assert.deepEqual(missing, [], `${file} ${lang}`);
+    }
+  }
+});
+
+test('BRIEF language drives the prototype and dashboard; --lang overrides it', async () => {
+  const { renderPrototype } = await import('../skills/openidea/scripts/lib/prototype.mjs');
+  const { spawnSync } = await import('node:child_process');
+  const dir = copyFixture();
+  edit(dir, 'BRIEF.md', (s) => s.replace(/^---\n/, '---\nlanguage: id\n'));
+  const p = loadProject(dir);
+  const proto = renderPrototype(p, 'X', { mode: 'user' });
+  assert.match(proto, /<html lang="id">/);
+  assert.match(proto, /"whatToDo":"Apa yang ingin Anda lakukan\?"/);
+  const dash = renderDashboard(p, [], { mode: 'client' });
+  assert.match(dash, /<html lang="id">/);
+  assert.match(dash, /"h_decide":"Apa yang perlu diputuskan"/);
+  assert.match(dash, /"plural":"Alur"/);
+  assert.match(renderDashboard(p, [], { mode: 'client', lang: 'en' }), /<html lang="en">/);
+  const cli = join(dirname(fileURLToPath(import.meta.url)), '..', 'skills/openidea/scripts/openidea.mjs');
+  assert.equal(spawnSync(process.execPath, [cli, 'prototype', '--root', dir, '--lang', 'fr']).status, 2);
 });

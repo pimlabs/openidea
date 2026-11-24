@@ -10,6 +10,8 @@ Arguments from the user (optional): nothing to (re)generate, or `feedback "<view
 
 `openidea/blueprint/blueprint.json` exists. If not, point the user to `/openidea:blueprint`.
 
+Write every piece of prose in the project language (`language:` in `openidea/BRIEF.md`, default `en`); keep ids, frontmatter keys, enum values and section headings as the schema defines them (skill section 6, Language).
+
 ## Process: generate
 
 1. Run `openidea validate`, then `openidea prototype`.

@@ -93,6 +93,8 @@ node <plugin>/skills/openidea/scripts/openidea.mjs diagrams      # feature list 
 node <plugin>/skills/openidea/scripts/openidea.mjs dashboard [--client]
 ```
 
+**Language.** Set `language: id` (or `en`, the default) in `openidea/BRIEF.md` once. Claude then writes ideas, gaps and the blueprint in that language, and the dashboard, both prototypes and the report render their own words in it (dates, decimal comma included). `--lang en|id` overrides it for one run of `dashboard`, `prototype` or `report`, for example an English report for a foreign investor; it changes the tool's words, not your content. Ids, frontmatter keys and section headings stay in English so the CLI can read them.
+
 ## Commands
 
 | Command | What it does |

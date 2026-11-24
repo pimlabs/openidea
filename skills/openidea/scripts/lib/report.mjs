@@ -5,7 +5,7 @@ import { features } from './diagrams.mjs';
 import { openGaps, analyze, QUEUE_SIZE } from './analyze.mjs';
 import { estimate } from './estimate.mjs';
 import { BLUEPRINT_KINDS } from './validate.mjs';
-import { labels } from './i18n.mjs';
+import { labels, projectLang } from './i18n.mjs';
 
 // The language of the report being rendered; set by reportModel, read by the formatters below.
 let L = labels('en');
@@ -34,7 +34,7 @@ export const weeks = (n) => L.weeks(n);
 export const lbl = () => L;
 
 export function reportModel(p, { lang } = {}) {
-  const code = lang || (p.brief && !p.brief.error ? p.brief.data?.language : null) || 'en';
+  const code = projectLang(p, lang);
   L = labels(code);
   const bp = p.blueprint;
   const brief = p.brief && !p.brief.error ? p.brief.body : '';

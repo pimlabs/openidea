@@ -10,6 +10,8 @@ Arguments from the user: a gap id, optionally followed by the answer or evidence
 
 The gap exists in `openidea/gaps/` with status `open` or `validating`. With no gap id, show the decision queue (top 5 open gaps from `openidea/ideas/INDEX.md`, regenerate it first with `openidea index`) and ask which one to resolve.
 
+Write every piece of prose in the project language (`language:` in `openidea/BRIEF.md`, default `en`); keep ids, frontmatter keys, enum values and section headings as the schema defines them (skill section 6, Language).
+
 ## Process
 
 1. Show the gap's question, its proposed validation, and its decision criteria.
