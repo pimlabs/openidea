@@ -118,16 +118,19 @@ h1{font-size:21px}
 .slot{grid-template-columns:1fr;gap:0}
 input,select,button{font-size:16px}
 .filters input,.filters select{flex:1 1 100%}
-table,thead,tbody,tr,th,td{display:block;width:100%}
+table,thead,tbody{display:block;width:100%}
 table{border:0;background:none}
 thead{display:none}
-tbody tr{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;padding:6px 12px}
+tbody tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;padding:10px 12px}
 tbody tr:hover{background:var(--surface)}
-td{border:0;padding:5px 0;display:grid;grid-template-columns:38% 1fr;gap:8px;align-items:start}
-td>*{justify-self:start}
-td::before{content:attr(data-label);color:var(--muted);font-size:12.5px;font-weight:600}
+td{display:block;border:0;padding:0;width:100%;order:2;font-size:14px}
+td::before{content:attr(data-label) ": ";color:var(--muted);font-size:12.5px}
 td:not([data-label])::before,td[data-label=""]::before{content:none}
-td:not([data-label]),td[data-label=""]{grid-template-columns:1fr}
+td:first-child{order:0;font-weight:600;font-size:15px}
+td:first-child::before{content:none}
+td.pillcell{width:auto;order:1}
+td.pillcell::before{content:none}
+td.emptycell{display:none}
 .matrix td,.matrix th{text-align:left}
 .stat .v{font-size:24px}
 }
@@ -268,7 +271,7 @@ function ideas(){
     function draw(){var qv=q.value.toLowerCase();var list=D.ideas.filter(function(i){return (!s.value||i.data.status===s.value)&&(!c.value||i.data.category===c.value)&&(!qv||(i.data.id+' '+(i.data.category||'')).toLowerCase().indexOf(qv)>=0);});
       var openBy={};D.gaps.filter(openGap).forEach(function(g){(g.data.ideas||[]).forEach(function(id){openBy[id]=(openBy[id]||0)+1;});});
       document.getElementById('itable').innerHTML = list.length?'<table><thead><tr><th>Idea</th><th>Status</th><th>Type</th><th>Category</th><th>Updated</th><th>Open gaps</th></tr></thead><tbody>'+list.map(function(i){var d=i.data;
-        return '<tr><td>'+ideaLink(d.id)+(d.needs_clarification?' '+pill('needs clarification','warning'):'')+'</td><td>'+pill(d.status)+'</td><td>'+esc(d.type||'feature')+'</td><td>'+esc(d.category||'')+'</td><td>'+esc(d.updated||'')+'</td><td>'+(openBy[d.id]?pill(openBy[d.id],'open'):'')+'</td></tr>';}).join('')+'</tbody></table>':'<p class="empty">No ideas match.</p>';}
+        return '<tr><td>'+ideaLink(d.id)+(d.needs_clarification?' '+pill('needs clarification','warning'):'')+'</td><td>'+pill(d.status)+'</td><td>'+esc(d.type||'feature')+'</td><td>'+esc(d.category||'')+'</td><td>'+esc(d.updated||'')+'</td><td>'+(openBy[d.id]?pill(openBy[d.id]+' open gap'+(openBy[d.id]>1?'s':''),'open'):'')+'</td></tr>';}).join('')+'</tbody></table>':'<p class="empty">No ideas match.</p>';}
     [q,s,c].forEach(function(e){e.addEventListener('input',draw);});draw();},0);
   return h;
 }
@@ -350,7 +353,12 @@ function issues(){
 function labelCells(root){
   root.querySelectorAll('table').forEach(function(t){
     var heads = [].map.call(t.querySelectorAll('thead th'), function(th){return th.textContent.trim();});
-    t.querySelectorAll('tbody tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i]!==undefined)td.setAttribute('data-label',heads[i]);});});
+    t.querySelectorAll('tbody tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){
+      if(heads[i]!==undefined)td.setAttribute('data-label',heads[i]);
+      var txt=td.textContent.trim();
+      if(txt===''||txt==='\u00b7') td.classList.add('emptycell');
+      else if(i>0 && td.children.length && [].every.call(td.children,function(c){return c.classList.contains('pill');}) && td.querySelectorAll('div').length===0 && txt===[].map.call(td.children,function(c){return c.textContent;}).join('').trim()) td.classList.add('pillcell');
+    });});
   });
 }
 new MutationObserver(function(ms){ms.forEach(function(m){[].forEach.call(m.addedNodes,function(n){if(n.nodeType===1)labelCells(n.parentNode||n);});});}).observe(app,{childList:true,subtree:true});
