@@ -38,7 +38,7 @@ function payload(p, issues, mode) {
     estimate: est && {
       total: est.total, gapCost: est.gapCost,
       calibration: { team: est.calibration.team, capacity: est.calibration.capacity, factor: est.calibration.factor, samples: est.calibration.samples, start: est.calibration.start, present: est.calibration.present, setup: est.calibration.coef.setup, stabilize: est.calibration.coef.stabilize },
-      phases: est.phases.map((ph) => ({ id: ph.id, name: ph.name, low: ph.low, high: ph.high, weeks: ph.weeks, startWeek: ph.startWeek, endWeek: ph.endWeek, endDate: ph.endDate || null, setup: ph.setup,
+      phases: est.phases.map((ph) => ({ id: ph.id, name: ph.name, low: ph.low, high: ph.high, weeks: ph.weeks, likelyWeeks: ph.likelyWeeks, endDateLikely: ph.endDateLikely || null, startWeek: ph.startWeek, endWeek: ph.endWeek, endDate: ph.endDate || null, setup: ph.setup,
         items: ph.items.map((it) => ({ kind: it.kind, id: it.id, name: it.name, low: it.low, high: it.high, reasons: it.reasons })) })),
       unplanned: est.unplanned.map((it) => ({ kind: it.kind, id: it.id, name: it.name, low: it.low, high: it.high })),
     },
@@ -92,6 +92,13 @@ details.fold{margin:16px 0}details.fold>summary{cursor:pointer;color:var(--accen
 main{max-width:1180px;margin:0 auto;padding:24px max(20px,env(safe-area-inset-right)) calc(80px + env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
 h1{font-size:26px;line-height:1.25;margin:0 0 6px;letter-spacing:-.015em}h2{font-size:18px;margin:32px 0 12px}h3{font-size:15px;margin:18px 0 6px}
 .lede{color:var(--muted);margin:0 0 20px;max-width:760px}
+.hero{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:8px}.hero .vision{font-size:17px;line-height:1.5;margin:4px 0 14px;max-width:820px}
+.facts{display:grid;grid-template-columns:150px 1fr;gap:8px 16px;margin:0}.facts dt{color:var(--muted);font-size:13px;font-weight:600}.facts dd{margin:0}.facts ul{margin:0;padding-left:18px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px;padding:0;list-style:none;counter-reset:st}.steps li{counter-increment:st}.steps .st{cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:600;text-decoration:none}.steps .st:before{content:counter(st);display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px}
+.secnum{color:var(--accent);margin-right:6px}.sec-lede{color:var(--muted);margin:-6px 0 12px;max-width:760px}
+.actor h3{margin:0 0 2px}.actor ul{margin:8px 0 0;padding-left:18px}.idea-card .t{font-weight:600}.idea-card .p{margin:4px 0}.idea-card .d{color:var(--muted);font-size:13px}
+.phase-row{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--border)}.phase-row:first-child{border-top:0}.phase-row .n{font-weight:700;color:var(--accent)}
+.next-link{margin:10px 0 0;font-size:14px}
 .grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 /* Anything you can open has data-href: hover lift, pointer, and a chevron. Plain cards never react. */
@@ -170,6 +177,7 @@ header{position:static}
 .mode{margin-left:auto}
 /* Phones: the section tabs sit under the title and stick to the top. Not fixed to the bottom, where iOS Safari's own toolbar moves with the scroll. */
 #nav{display:none}
+.facts{grid-template-columns:1fr;gap:2px 0}.facts dd{margin-bottom:8px}.hero{padding:16px}
 #mnav{position:-webkit-sticky;position:sticky;top:0;z-index:10;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:var(--bg);border-bottom:1px solid var(--border);padding:4px max(6px,env(safe-area-inset-right)) 4px max(6px,env(safe-area-inset-left))}
 nav a{text-align:center;padding:10px 2px;font-size:12.5px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px}
 nav a .badge{margin-left:3px;min-width:16px;line-height:16px;font-size:10.5px}
@@ -283,31 +291,81 @@ document.getElementById('brand').innerHTML = esc(D.project)+'<small>OpenIdea</sm
 var modeEl = document.getElementById('mode'); modeEl.textContent = CLIENT?'Client view \u00b7 safe to share':'Internal \u00b7 do not share'; if(CLIENT) modeEl.className='mode client';
 document.title = D.project + ' · OpenIdea';
 
+function briefSection(t){if(!D.brief)return '';var m=String(D.brief.body).split(/^##\s+/m).filter(function(x){return x.toLowerCase().indexOf(t.toLowerCase())===0;})[0];return m?m.replace(/^[^\n]*\n/,'').trim():'';}
+function briefList(t){return briefSection(t).split('\n').map(function(l){return l.replace(/^\s*[-*]\s*(\[[ x]\]\s*)?/,'').trim();}).filter(Boolean);}
+function briefPara(t){return briefSection(t).split('\n').filter(function(l){return !/^\s*[-*]/.test(l);}).join(' ').trim();}
+function q5(body,label){var m=String(body||'').match(new RegExp('\\*\\*'+label+'\\*\\*:?\\s*([^\\n]+)'));return m?m[1].trim():'';}
+function human(id){var s=String(id).replace(/-/g,' ');return s.charAt(0).toUpperCase()+s.slice(1);}
+function activeFeatures(){return D.ideas.filter(function(i){return i.location==='active'&&i.data.type!=='chore'&&['killed','merged','split'].indexOf(i.data.status)<0;});}
+// The overview reads top to bottom as a story: what the app is, who uses it, what it does, how it is delivered,
+// how solid the definition is, and what needs a decision. Every section links to its detail page.
 function overview(){
-  var c = D.counts, h = '<h1>'+esc(D.project)+'</h1><p class="lede">How clear and validated this product definition is right now, and what needs your decision.</p>';
+  var c = D.counts, feats = activeFeatures();
+  var vision = briefPara('Vision'), users = briefPara('Target Users'), value = briefPara('Core Value Prop');
+  var order = {}; D.milestones.forEach(function(m,n){m.ideas.forEach(function(id,k){if(order[id]==null)order[id]=n*1000+k;});});
+  var replaces = feats.slice().sort(function(a,b){return (order[a.data.id]==null?1e9:order[a.data.id])-(order[b.data.id]==null?1e9:order[b.data.id]);}).map(function(i){return i.data.replaces;}).filter(Boolean);
+  var h = '<div class="hero"><h1>'+esc(D.project)+'</h1>'+(vision?'<p class="vision">'+esc(vision)+'</p>':'<p class="vision meta">No product brief yet. Run /openidea:init.</p>');
+  h += '<dl class="facts">'+(users?'<dt>For</dt><dd>'+esc(users)+'</dd>':'')+(value?'<dt>Why it matters</dt><dd>'+esc(value)+'</dd>':'')+
+    (replaces.length?'<dt>Replaces today</dt><dd><ul>'+replaces.map(function(r){return '<li>'+esc(r)+'</li>';}).join('')+'</ul></dd>':'')+
+    (briefList('Non-goals').length?'<dt>Not included</dt><dd><ul>'+briefList('Non-goals').map(function(r){return '<li>'+esc(r)+'</li>';}).join('')+'</ul></dd>':'')+
+    (briefList('Constraints').length?'<dt>Constraints</dt><dd><ul>'+briefList('Constraints').map(function(r){return '<li>'+esc(r)+'</li>';}).join('')+'</ul></dd>':'')+'</dl>';
+  var steps=[['s-users','Who uses it'],['s-what','What it does'],['s-plan','How it is delivered'],['s-health','How clear it is'],['decide','What needs a decision']];
+  h += '<ol class="steps">'+steps.map(function(x){return '<li><span class="st" role="link" tabindex="0" data-href="@'+x[0]+'">'+x[1]+'</span></li>';}).join('')+'</ol></div>';
+
+  // 1. Who uses it
+  var actors = D.blueprint&&D.blueprint.actors||[], flows = D.blueprint&&D.blueprint.flows||[];
+  h += '<h2 id="s-users"><span class="secnum">1</span>Who uses it and what they do</h2>';
+  if(actors.length){
+    h += '<div class="grid g2">'+actors.map(function(a){var fs=flows.filter(function(f){return f.actor===a.id;});
+      return '<div class="card actor"><h3>'+esc(a.name||a.id)+(a.assumption?' '+pill('assumption'):'')+'</h3><div class="meta">'+esc(a.description||'')+'</div>'+
+        (fs.length?'<ul>'+fs.map(function(f){return '<li><a href="#feature/'+encodeURIComponent(f.id)+'">'+esc(f.name||f.id)+'</a></li>';}).join('')+'</ul>':'<p class="meta" style="margin:8px 0 0">No feature for this role yet.</p>')+'</div>';}).join('')+'</div>';
+    h += '<p class="next-link"><a href="#features">All '+D.features.length+' features with screens and definition of done ›</a></p>';
+  } else h += '<p class="empty">No blueprint yet, so roles are not derived. Run /openidea:blueprint.</p>';
+
+  // 2. What it does: the ideas, grouped by phase in execution order
+  h += '<h2 id="s-what"><span class="secnum">2</span>What it does</h2><p class="sec-lede">Each idea states the problem it solves and what done looks like. Grouped by delivery phase.</p>';
+  var groups = D.milestones.map(function(m){return [m.name, m.ideas.map(function(id){return ideaById[id];}).filter(function(i){return i&&feats.indexOf(i)>=0;})];});
+  var planned = {}; D.milestones.forEach(function(m){m.ideas.forEach(function(id){planned[id]=1;});});
+  var unplanned = feats.filter(function(i){return !planned[i.data.id];}); if(unplanned.length) groups.push([D.milestones.length?'Not planned yet':'Ideas', unplanned]);
+  var openBy={}; D.gaps.filter(openGap).forEach(function(g){(g.data.ideas||[]).forEach(function(id){openBy[id]=(openBy[id]||0)+1;});});
+  groups.forEach(function(gr){ if(!gr[1].length) return;
+    h += '<h3>'+esc(gr[0])+'</h3><div class="grid g2">'+gr[1].map(function(i){var d=i.data, p=q5(i.body,'Problem'), done=q5(i.body,'Done looks like');
+      return '<div class="card idea-card" data-href="idea/'+encodeURIComponent(d.id)+'" tabindex="0"><div class="chips">'+pill(d.status)+(openBy[d.id]?pill(openBy[d.id]+' open gap'+(openBy[d.id]>1?'s':''),openBy[d.id]?'medium':'tag'):'')+'</div><div class="t">'+esc(d.title||human(d.id))+'</div>'+(p?'<div class="p">'+esc(p)+'</div>':'')+(done?'<div class="d"><strong>Done when:</strong> '+esc(done)+'</div>':'')+'</div>';}).join('')+'</div>';});
+  if(!feats.length) h += '<p class="empty">No ideas yet. Run /openidea:capture.</p>';
+
+  // 3. How it is delivered
+  h += '<h2 id="s-plan"><span class="secnum">3</span>How it is delivered</h2>';
+  if(D.estimate&&D.estimate.phases.length){var E=D.estimate;
+    h += '<p class="sec-lede">Likely <strong>'+rng(E.total.likelyWeeks,E.total.likelyWeeks)+' weeks</strong>'+(E.total.endDateLikely?' (around '+fmtDate(E.total.endDateLikely)+')':'')+'; between '+rng(E.total.weeks[0],E.total.weeks[1],'weeks')+' depending on open questions.</p><div class="card">'+
+      E.phases.filter(function(ph){return ph.id!=='all';}).map(function(ph,n){var m=D.milestones.filter(function(x){return x.id===ph.id;})[0];
+        return '<div class="phase-row"><span class="n">'+(n+1)+'</span><div><strong>'+esc(ph.name)+'</strong><div class="meta">'+(m?m.ideas.map(function(id){var i=ideaById[id];return esc(i&&i.data.title||human(id));}).join(', '):'')+'</div></div><div style="text-align:right">'+pill('likely '+rng(ph.likelyWeeks,ph.likelyWeeks,'wk'),'tag')+(m&&m.blockingGaps.length?'<div>'+pill('gate blocked','blocked')+'</div>':'')+'</div></div>';}).join('')+'</div>';
+    h += '<p class="next-link"><a href="#roadmap">Timeline, phases and work breakdown ›</a></p>';
+  } else h += D.milestones.length?milestoneTable():'<p class="empty">No ROADMAP.md yet. Run /openidea:plan.</p>';
+
+  // 4. How clear the definition is
   var depthPct = D.depth && D.depth.score!=null ? Math.round(D.depth.score*100) : null;
   var ready = (c.byStatus.ready||0), cap = (c.byStatus.captured||0);
-  h += '<div class="grid g4">';
+  h += '<h2 id="s-health"><span class="secnum">4</span>How clear the definition is</h2><p class="sec-lede">Whether this is ready to build: open blind spots, how many details are filled in, and what was assumed without a source.</p><div class="grid g4">';
   h += '<div class="card stat '+(c.openHigh?'bad primary':'good')+'" '+(D.queue.length?'data-href="@decide" tabindex="0"':'')+'><div class="v">'+c.openHigh+'</div><div class="k">Open high-impact gaps</div><div class="s">'+((c.gapStatus.open||0)+(c.gapStatus.validating||0))+' open in total</div></div>';
   h += '<div class="card stat" data-href="ideas" tabindex="0"><div class="v">'+ready+' / '+(ready+cap)+'</div><div class="k">Ideas ready</div><div class="s">'+cap+' still captured</div></div>';
-  h += '<div class="card stat '+(depthPct==null?'':depthPct<60?'bad':depthPct<85?'warn':'good')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+(depthPct==null?'–':depthPct+'%')+'</div><div class="k">Blueprint depth</div><div class="s">'+(D.depth?D.depth.filled+'/'+D.depth.total+' mandatory slots':'No blueprint yet')+'</div>'+(depthPct==null?'':'<div class="depth"><span style="width:'+depthPct+'%;background:'+(depthPct>=85?'var(--green)':depthPct>=60?'var(--amber)':'var(--red)')+'"></span></div>')+'</div>';
-  h += '<div class="card stat '+(D.assumptions?'warn':'')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+D.assumptions+'</div><div class="k">Hidden assumptions</div><div class="s">Blueprint elements with no source idea</div></div>';
-  if(D.estimate) h += '<div class="card stat" data-href="roadmap" tabindex="0"><div class="v">'+rng(D.estimate.total.weeks[0],D.estimate.total.weeks[1])+'<small> wk</small></div><div class="k">Estimated timeline</div><div class="s">'+(D.estimate.total.endDate?'Done '+fmtDate(D.estimate.total.endDate[0])+' to '+fmtDate(D.estimate.total.endDate[1]):rng(D.estimate.total.low,D.estimate.total.high,'person-days'))+'</div></div>';
+  h += '<div class="card stat '+(depthPct==null?'':depthPct<60?'bad':depthPct<85?'warn':'good')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+(depthPct==null?'–':depthPct+'%')+'</div><div class="k">Blueprint depth</div><div class="s">'+(D.depth?D.depth.filled+'/'+D.depth.total+' mandatory details filled':'No blueprint yet')+'</div>'+(depthPct==null?'':'<div class="depth"><span style="width:'+depthPct+'%;background:'+(depthPct>=85?'var(--green)':depthPct>=60?'var(--amber)':'var(--red)')+'"></span></div>')+'</div>';
+  h += '<div class="card stat '+(D.assumptions?'warn':'')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+D.assumptions+'</div><div class="k">Hidden assumptions</div><div class="s">Parts of the app no idea asked for</div></div>';
   if(!CLIENT) h += '<div class="card stat '+(c.errors?'bad':'good')+'" data-href="issues" tabindex="0"><div class="v">'+c.errors+'</div><div class="k">Check errors</div><div class="s">'+c.warnings+' warnings</div></div>';
   h += '</div>';
-  h += '<h2 id="decide">Decide next</h2>'+queueCards(D.queue);
+
+  // 5. What needs a decision
+  h += '<h2 id="decide"><span class="secnum">5</span>What needs a decision</h2><p class="sec-lede">The '+Math.min(D.queue.length,5)+' most important open questions, highest impact first. The rest wait until these are settled.</p>'+queueCards(D.queue);
   var rest = D.gaps.filter(function(g){return D.queue.indexOf(g.data.id)<0;});
   if(rest.length) h += '<details class="fold"><summary>All other gaps ('+rest.length+')</summary>'+gapTable(rest)+'</details>';
-  h += '<h2>Milestone gates</h2>' + milestoneTable();
+  if(D.milestones.length) h += '<details class="fold"><summary>Milestone gates</summary>'+milestoneTable()+'</details>';
   h += '<details class="fold"><summary>How to read colours and labels</summary><div class="card legend-card"><div class="lg"><span class="sw" style="background:var(--red)"></span><div><strong>Red</strong>: needs a decision or blocks progress (open gap, high impact, error, not defined)</div></div>'+
     '<div class="lg"><span class="sw" style="background:var(--amber)"></span><div><strong>Amber</strong>: in progress or worth a look (captured, validating, draft, medium, warning)</div></div>'+
     '<div class="lg"><span class="sw" style="background:var(--orange)"></span><div><strong>Orange</strong>: risk knowingly accepted</div></div>'+
     '<div class="lg"><span class="sw" style="background:var(--green)"></span><div><strong>Green</strong>: done or safe (ready, resolved, approved, gate clear)</div></div>'+
     '<div class="lg"><span class="sw" style="background:var(--purple)"></span><div><strong>Purple</strong>: handed off to OpenSpec (promoted)</div></div>'+
     '<div class="lg"><span class="sw" style="background:var(--gray)"></span><div><strong>Grey</strong>: inactive or low (parked, killed, dismissed, low impact)</div></div>'+
-    '<div class="lg"><span class="sw" style="background:var(--accent)"></span><div><strong>Blue</strong>: clickable. A card or row with \u203a opens</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--accent)"></span><div><strong>Blue</strong>: clickable. A card or row with › opens</div></div>'+
     '<p class="meta" style="margin:8px 0 0">Filled labels show <strong>severity</strong>, labels with a dot show <strong>status</strong>, plain grey text is just a <strong>tag</strong>.</p></div></details>';
-  if(D.brief) h += '<details class="fold"><summary>Product brief</summary><div class="card md">'+md(D.brief.body.replace(/^#\s+.*$/m,''))+'</div></details>';
   return h;
 }
 function milestoneTable(){

@@ -14,6 +14,7 @@ import { renderPrototype } from './lib/prototype.mjs';
 import { renderReportMd } from './lib/report.mjs';
 import { renderReportPdf } from './lib/pdf.mjs';
 import { renderReportPptx } from './lib/pptx.mjs';
+import { LANGS } from './lib/i18n.mjs';
 
 const HELP = `openidea <command> [options]
 
@@ -32,7 +33,8 @@ Commands:
                the team (undefined behaviour in red, feedback copies back as a gap).
   report       Write the finished, client-safe report (features, phases and timeline, open
                questions, assumptions, next steps) to openidea/reports/report.<format>.
-               --format md | pptx | pdf (default md).
+               --format md | pptx | pdf (default md); --lang en | id (default: BRIEF's
+               language, else en).
   dashboard    Write a self-contained HTML dashboard (default openidea/dashboard/index.html).
 
 Options:
@@ -42,13 +44,14 @@ Options:
                  default output openidea/dashboard/client.html
   --out <file>   dashboard, report: output path
   --format <f>   report: md, pptx or pdf
+  --lang <l>     report: en or id
 `;
 
 function parseArgs(argv) {
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === '--root' || a === '--out' || a === '--format') args[a.slice(2)] = argv[++i];
+    if (a === '--root' || a === '--out' || a === '--format' || a === '--lang') args[a.slice(2)] = argv[++i];
     else if (a.startsWith('--')) args[a.slice(2)] = true;
     else args._.push(a);
   }
@@ -121,8 +124,10 @@ export function main(argv) {
     const format = String(args.format || 'md').toLowerCase();
     const render = { md: renderReportMd, pptx: renderReportPptx, pdf: renderReportPdf }[format];
     if (!render) { console.error(`Unknown format "${format}". Use md, pptx or pdf.`); return 2; }
+    const lang = args.lang ? String(args.lang).toLowerCase() : undefined;
+    if (lang && !LANGS[lang]) { console.error(`Unknown language "${lang}". Use ${Object.keys(LANGS).join(' or ')}.`); return 2; }
     const path = resolve(args.out || join(project.dir, 'reports', `report.${format}`));
-    write(path, render(project));
+    write(path, render(project, { lang }));
     console.log(`Wrote ${path}.`);
     return 0;
   }

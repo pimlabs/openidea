@@ -11,6 +11,7 @@ export function openGaps(p) {
     .filter((g) => g.data && OPEN_GAP.has(g.data.status))
     .sort((a, b) =>
       (RANK[b.data.impact] || 0) * (RANK[b.data.confidence] || 0) - (RANK[a.data.impact] || 0) * (RANK[a.data.confidence] || 0)
+      || (RANK[b.data.impact] || 0) - (RANK[a.data.impact] || 0)
       || (KIND_COST[a.data.kind] || 9) - (KIND_COST[b.data.kind] || 9)
       || String(a.data.id).localeCompare(String(b.data.id)));
 }

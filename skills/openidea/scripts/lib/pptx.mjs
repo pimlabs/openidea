@@ -58,7 +58,7 @@ class Slide {
 }
 
 const chunk = (arr, n) => { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; };
-const IMPACT_STYLE = { High: [C.redSoft, C.red], Medium: [C.amberSoft, C.amber], Low: [C.tile, C.muted] };
+const IMPACT_STYLE = { high: [C.redSoft, C.red], medium: [C.amberSoft, C.amber], low: [C.tile, C.muted] };
 
 function content(m, kicker, title) {
   const s = new Slide();
@@ -66,14 +66,14 @@ function content(m, kicker, title) {
   s.text(M, 0.74, CW, 1.05, [[{ text: title, size: 24, bold: true, color: C.text }]], { inset: 0, line: 95 });
   s.rect(M, 7.0, CW, 0.01, C.line);
   s.footer = (n) => {
-    s.text(M, 7.06, CW - 1, 0.3, [[{ text: `${m.title}  ·  ${m.subtitle}  ·  Draft for discussion`, size: 9, color: C.dim }]], { inset: 0 });
+    s.text(M, 7.06, CW - 1, 0.3, [[{ text: `${m.title}  ·  ${m.subtitle}  ·  ${m.L.draft}`, size: 9, color: C.dim }]], { inset: 0 });
     s.text(SW - M - 1, 7.06, 1, 0.3, [[{ text: String(n), size: 9, color: C.dim }]], { inset: 0, align: 'r' });
   };
   return s;
 }
 
 export function buildSlides(m) {
-  const slides = [];
+  const slides = [], L = m.L;
 
   // Cover
   const cover = new Slide();
@@ -82,21 +82,31 @@ export function buildSlides(m) {
   cover.text(M, 1.6, CW, 0.4, [[{ text: m.subtitle, size: 13, bold: true, color: C.coverSub, caps: true, spc: 150 }]], { inset: 0 });
   cover.text(M, 2.45, 10.5, 1.9, [[{ text: m.title, size: 44, bold: true, color: C.white }]], { inset: 0, line: 90 });
   cover.text(M, 3.75, 10.5, 1.1, [[{ text: m.headline + '.', size: 18, color: C.coverSub }]], { inset: 0, line: 110 });
-  cover.text(M, 6.55, CW, 0.4, [[{ text: `${m.date ? fmtDate(m.date) + '  ·  ' : ''}Draft for discussion`, size: 12, color: C.coverSub }]], { inset: 0 });
+  cover.text(M, 6.55, CW, 0.4, [[{ text: `${m.date ? fmtDate(m.date) + '  ·  ' : ''}${L.draft}`, size: 12, color: C.coverSub }]], { inset: 0 });
   slides.push(cover);
 
   // Executive summary: key messages left, numbers right
-  const ex = content(m, 'Executive summary', m.headline);
-  const msgs = m.messages.slice(0, 4), colW = 7.55, rowH = (BOTTOM - TOP) / Math.max(msgs.length, 1);
+  const ex = content(m, L.execSummary, m.headline);
+  const msgs = m.messages.slice(0, 4), colW = 7.55;
+  // Rows sized to their text; the font steps down until every message fits (long briefs, longer languages).
+  let fs = 13, lines, lh;
+  for (; fs >= 10; fs--) {
+    const cpl = ((colW - 2.2) * 72) / (fs * 0.5); lh = (fs * 1.3) / 72;
+    lines = msgs.map((x) => Math.max(Math.ceil(x.text.length / cpl), Math.ceil(x.title.length / ((2.1 * 72) / (fs * 0.55)))));
+    if (lines.reduce((a, b) => a + b, 0) * lh + msgs.length * 0.3 <= BOTTOM - TOP) break;
+  }
+  let yy = TOP;
+  const spare = Math.min(0.6, Math.max(0, (BOTTOM - TOP - (lines.reduce((a, b) => a + b, 0) * lh + msgs.length * 0.3)) / Math.max(msgs.length, 1)));
   msgs.forEach((x, i) => {
-    const y = TOP + i * rowH;
-    if (i) ex.rect(M, y - 0.12, colW, 0.01, C.line);
-    ex.text(M, y, 2.1, rowH - 0.2, [[{ text: x.title, size: 13, bold: true, color: C.accent }]], { inset: 0 });
-    ex.text(M + 2.2, y, colW - 2.2, rowH - 0.2, [[{ text: x.text, size: 13 }]], { inset: 0, line: 105 });
+    const rh = lines[i] * lh + 0.3 + spare;
+    if (i) ex.rect(M, yy - 0.12, colW, 0.01, C.line);
+    ex.text(M, yy, 2.1, rh - 0.15, [[{ text: x.title, size: fs, bold: true, color: C.accent }]], { inset: 0 });
+    ex.text(M + 2.2, yy, colW - 2.2, rh - 0.15, [[{ text: x.text, size: fs }]], { inset: 0, line: 105 });
+    yy += rh;
   });
-  const tiles = [[String(m.features.length), 'features', `in ${m.phases.length || 1} phase${m.phases.length === 1 ? '' : 's'}`, C.text]];
-  if (m.timeline) tiles.push([String(m.timeline.likely), 'weeks, likely', `range ${range(m.timeline.low, m.timeline.high)} weeks${m.timeline.endDateLikely ? ` · ready ~${fmtDate(m.timeline.endDateLikely)}` : ''}`, C.accent]);
-  tiles.push([String(m.questions.length), m.questions.length === 1 ? 'decision needed' : 'decisions needed', m.questions.length ? 'from you, listed next' : 'nothing blocks the plan', m.questions.some((q) => q.impact === 'High') ? C.red : C.text]);
+  const tiles = [[String(m.features.length), L.featuresWordLower(m.features.length), L.featuresInPhases(m.phases.length || 1), C.text]];
+  if (m.timeline) tiles.push([L.num(m.timeline.likely), L.weeksLikely, `${L.rangeWeeks(range(m.timeline.low, m.timeline.high))}${m.timeline.endDateLikely ? ` · ${L.readyApprox(fmtDate(m.timeline.endDateLikely))}` : ''}`, C.accent]);
+  tiles.push([String(m.questions.length), L.decisionsNeeded(m.questions.length), m.questions.length ? L.fromYouListed : '', m.questions.some((q) => q.level === 'high') ? C.red : C.text]);
   const tx = M + colW + 0.45, tw = CW - colW - 0.45, th = ((BOTTOM - TOP) - 0.2 * (tiles.length - 1)) / tiles.length;
   tiles.forEach(([v, k, sub, col], i) => {
     const y = TOP - 0.05 + i * (th + 0.2);
@@ -108,32 +118,38 @@ export function buildSlides(m) {
 
   // Decisions needed: one card per question, three per slide
   chunk(m.questions, 3).forEach((qs, pi, all) => {
-    const s = content(m, `What we need from you${all.length > 1 ? ` (${pi + 1}/${all.length})` : ''}`, m.questionsHeadline);
+    const s = content(m, `${L.needFromYou}${all.length > 1 ? ` (${pi + 1}/${all.length})` : ''}`, m.questionsHeadline);
     const gap = 0.3, n = all.length > 1 ? 3 : Math.max(qs.length, 2), w = (CW - gap * (n - 1)) / n;
     qs.forEach((q, i) => {
-      const x = M + i * (w + gap), y = TOP, h = 3.9;
+      const x = M + i * (w + gap), y = TOP, h = 4.4, qs2 = q.question.length > 100 ? 14 : q.question.length > 70 ? 15.5 : 17;
       s.card(x, y, w, h);
-      s.rect(x, y, w, 0.07, IMPACT_STYLE[q.impact]?.[1] || C.muted);
+      s.rect(x, y, w, 0.07, IMPACT_STYLE[q.level]?.[1] || C.muted);
       s.text(x + 0.3, y + 0.3, 0.6, 0.5, [[{ text: String(pi * 3 + i + 1), size: 28, bold: true, color: C.dim }]], { inset: 0 });
-      const [bg, fg] = IMPACT_STYLE[q.impact] || [C.tile, C.muted];
-      s.chip(x + w - 0.3 - (0.22 + `${q.impact} impact`.length * 0.078), y + 0.38, `${q.impact} impact`, bg, fg);
-      s.text(x + 0.3, y + 1.0, w - 0.6, 1.7, [[{ text: q.question, size: 17, bold: true }]], { inset: 0, line: 105 });
+      const [bg, fg] = IMPACT_STYLE[q.level] || [C.tile, C.muted], chipT = L.impactSuffix(q.impact);
+      s.chip(x + w - 0.3 - (0.22 + chipT.length * 0.078), y + 0.38, chipT, bg, fg);
+      s.text(x + 0.3, y + 1.0, w - 0.6, 1.7, [[{ text: q.question, size: qs2, bold: true }]], { inset: 0, line: 105 });
       const meta = [];
-      if (q.features.length) meta.push([{ text: 'Affects  ', size: 11, bold: true, color: C.muted }, { text: q.features.join(', '), size: 12 }]);
-      if (q.days) meta.push([{ text: 'Could add  ', size: 11, bold: true, color: C.muted }, { text: `up to ${q.days} day${q.days === 1 ? '' : 's'}`, size: 12 }]);
-      if (q.blocks) meta.push([{ text: 'Blocks  ', size: 11, bold: true, color: C.red }, { text: `${q.blocks} cannot start without it`, size: 12, color: C.red }]);
-      s.rect(x + 0.3, y + 2.75, w - 0.6, 0.01, C.line);
-      s.text(x + 0.3, y + 2.9, w - 0.6, h - 3.0, meta, { inset: 0, spacing: 6 });
+      if (q.features.length) meta.push([{ text: L.affects + '  ', size: 11, bold: true, color: C.muted }, { text: q.features.join(', '), size: 12 }]);
+      if (q.days) meta.push([{ text: L.couldAdd + '  ', size: 11, bold: true, color: C.muted }, { text: L.upToDays(q.days), size: 12 }]);
+      if (q.blocks) meta.push([{ text: L.blocks + '  ', size: 11, bold: true, color: C.red }, { text: L.cannotStart(q.blocks), size: 12, color: C.red }]);
+      s.rect(x + 0.3, y + 2.95, w - 0.6, 0.01, C.line);
+      s.text(x + 0.3, y + 3.1, w - 0.6, h - 3.2, meta, { inset: 0, spacing: 6 });
     });
+    slides.push(s);
+  });
+  // The questions after the first round: listed so nothing is hidden, settled once the first round is answered
+  chunk(m.moreQuestions, 8).forEach((qs, pi, all) => {
+    const s = content(m, `${L.alsoOpen}${all.length > 1 ? ` (${pi + 1}/${all.length})` : ''}`, L.alsoOpenTitle(m.moreQuestions.length));
+    s.table(M, TOP, CW, [L.question, L.impactCol, L.affects], qs.map((q) => [q.question, q.impact, q.features.join(', ') || L.wholeProject]), [0.62, 0.1, 0.28], { size: 11, rowH: 0.56 });
     slides.push(s);
   });
 
   // Plan and timeline: Gantt on the likely schedule, plus the whole-project range
   if (m.phases.length) chunk(m.phases, 5).forEach((phs) => {
-    const s = content(m, 'Plan and timeline', m.timelineHeadline);
+    const s = content(m, L.planTimeline, m.timelineHeadline);
     const max = Math.max(m.timeline?.high || 1, 1), labelW = 3.3, trackX = M + labelW, trackW = CW - labelW - 1.6;
     const step = max <= 8 ? 1 : max <= 16 ? 2 : max <= 32 ? 4 : 8;
-    s.text(trackX - 0.3, TOP - 0.05, 0.6, 0.3, [[{ text: 'Week', size: 9, color: C.dim }]], { inset: 0, align: 'ctr' });
+    s.text(trackX - 0.3, TOP - 0.05, 0.6, 0.3, [[{ text: L.week, size: 9, color: C.dim }]], { inset: 0, align: 'ctr' });
     for (let w = 0; w <= max; w += step) {
       const x = trackX + (w / max) * trackW;
       s.rect(x, TOP + 0.3, 0.008, 0.55 + phs.length * 0.78, C.line);
@@ -142,65 +158,81 @@ export function buildSlides(m) {
     phs.forEach((ph, i) => {
       const y = TOP + 0.45 + i * 0.78;
       s.text(M, y - 0.05, labelW - 0.25, 0.36, [[{ text: `${ph.n}  `, size: 13, bold: true, color: C.accent }, { text: ph.name, size: 13, bold: true }]], { inset: 0 });
-      s.text(M, y + 0.27, labelW - 0.25, 0.3, [[{ text: `${ph.features.length} feature${ph.features.length === 1 ? '' : 's'} · range ${range(ph.weeks[0], ph.weeks[1])} wk`, size: 10, color: C.muted }]], { inset: 0 });
+      s.text(M, y + 0.27, labelW - 0.25, 0.3, [[{ text: L.featureCount(ph.features.length, range(ph.weeks[0], ph.weeks[1])), size: 10, color: C.muted }]], { inset: 0 });
       const x = trackX + (ph.startLikely / max) * trackW, w = (ph.likely / max) * trackW;
       s.shape(x, y, w, 0.42, C.accent, { geom: 'roundRect', adj: 20000 });
-      s.text(x, y, Math.max(w, 1), 0.42, [[{ text: weeks(ph.likely), size: 11, bold: true, color: C.white }]], { inset: 0.08, anchor: 'ctr' });
-      if (ph.blockers.length) s.chip(x + w + 0.1, y + 0.07, 'waiting on a decision', C.redSoft, C.red, 9);
-      s.text(trackX + trackW + 0.15, y + 0.02, 1.45, 0.4, [[{ text: ph.endDateLikely ? `~${fmtDate(ph.endDateLikely)}` : `wk ${ph.startLikely + ph.likely}`, size: 11, bold: true, color: C.muted }]], { inset: 0, anchor: 'ctr' });
+      const bl = weeks(ph.likely), inside = bl.length * 0.09 + 0.2 < w, lw = bl.length * 0.09 + 0.2;
+      if (inside) s.text(x, y, w, 0.42, [[{ text: bl, size: 11, bold: true, color: C.white }]], { inset: 0.08, anchor: 'ctr' });
+      else s.text(x + w + 0.05, y, lw, 0.42, [[{ text: bl, size: 11, bold: true, color: C.accent }]], { inset: 0.02, anchor: 'ctr' });
+      if (ph.blockers.length) s.chip(x + w + 0.1 + (inside ? 0 : lw), y + 0.07, L.waitingOnDecision, C.redSoft, C.red, 9);
+      s.text(trackX + trackW + 0.15, y + 0.02, 1.45, 0.4, [[{ text: ph.endDateLikely ? `~${fmtDate(ph.endDateLikely)}` : L.weekN(ph.startLikely + ph.likely), size: 11, bold: true, color: C.muted }]], { inset: 0, anchor: 'ctr' });
     });
     if (m.timeline) {
       const y = Math.min(5.75, TOP + 0.95 + phs.length * 0.78);
       s.card(M, y - 0.2, CW, 1.05, C.tile);
-      s.text(M + 0.25, y - 0.12, labelW - 0.4, 0.9, [[{ text: 'Whole project', size: 13, bold: true }], [{ text: `team of ${m.timeline.people}; the upper end prices in what is not yet decided`, size: 10, color: C.muted }]], { inset: 0, anchor: 'ctr', spacing: 2 });
+      s.text(M + 0.25, y - 0.12, labelW - 0.4, 0.9, [[{ text: L.wholeProject, size: 13, bold: true }], [{ text: L.wholeProjectSub(m.timeline.people), size: 10, color: C.muted }]], { inset: 0, anchor: 'ctr', spacing: 2 });
       const lo = trackX + (m.timeline.low / max) * trackW, hi = trackX + (m.timeline.high / max) * trackW, li = trackX + (m.timeline.likely / max) * trackW;
       s.shape(lo, y + 0.16, hi - lo, 0.16, C.amberSoft, { geom: 'roundRect', adj: 50000, line: [C.amber, 0.75] });
       s.shape(li - 0.11, y + 0.13, 0.22, 0.22, C.accent, { geom: 'ellipse' });
-      s.text(lo - 0.6, y + 0.36, 1.2, 0.3, [[{ text: `${m.timeline.low} wk`, size: 10, color: C.muted }]], { inset: 0, align: 'ctr' });
-      s.text(li - 0.8, y - 0.17, 1.6, 0.3, [[{ text: `likely ${m.timeline.likely} wk`, size: 10, bold: true, color: C.accent }]], { inset: 0, align: 'ctr' });
-      s.text(hi - 0.6, y + 0.36, 1.2, 0.3, [[{ text: `${m.timeline.high} wk`, size: 10, color: C.muted }]], { inset: 0, align: 'ctr' });
+      s.text(lo - 0.6, y + 0.36, 1.2, 0.3, [[{ text: `${L.num(m.timeline.low)} ${L.wk}`, size: 10, color: C.muted }]], { inset: 0, align: 'ctr' });
+      s.text(li - 0.8, y - 0.17, 1.6, 0.3, [[{ text: L.likelyWk(m.timeline.likely), size: 10, bold: true, color: C.accent }]], { inset: 0, align: 'ctr' });
+      s.text(hi - 0.6, y + 0.36, 1.2, 0.3, [[{ text: `${L.num(m.timeline.high)} ${L.wk}`, size: 10, color: C.muted }]], { inset: 0, align: 'ctr' });
       if (m.timeline.endDate) s.text(trackX + trackW + 0.15, y - 0.08, 1.45, 0.8, [[{ text: `${fmtDate(m.timeline.endDate[0], { year: false })} – ${fmtDate(m.timeline.endDate[1])}`, size: 10, bold: true, color: C.muted }]], { inset: 0, anchor: 'ctr' });
     }
     slides.push(s);
   });
 
   // Scope overview: one column per phase
-  const cols = [...m.phases.map((ph) => ({ head: `${ph.n}  ${ph.name}`, sub: `likely ${weeks(ph.likely)}`, items: ph.features, later: false }))];
-  if (m.later.length) cols.push({ head: 'Later', sub: 'not planned yet', items: m.later, later: true });
-  if (!m.phases.length) cols.push({ head: 'Features', sub: '', items: m.features, later: false });
+  const cols = [...m.phases.map((ph) => ({ head: `${ph.n}  ${ph.name}`, sub: L.likelyWeeks(ph.likely), items: ph.features, later: false }))];
+  if (m.later.length) cols.push({ head: L.later, sub: L.notPlanned, items: m.later, later: true });
+  if (!m.phases.length) cols.push({ head: L.featuresWord, sub: '', items: m.features, later: false });
   chunk(cols, 4).forEach((cs) => {
-    const s = content(m, 'Scope', m.featuresHeadline);
+    const s = content(m, L.scope, m.featuresHeadline);
     const gap = 0.25, w = (CW - gap * (cs.length - 1)) / cs.length;
-    const ch = Math.min(BOTTOM - TOP, Math.max(2.6, 1.35 + Math.max(...cs.map((c) => Math.min(c.items.length, 8))) * 0.62));
-    cs.forEach((c, i) => {
+    // Lay each column out from its text: wrapped heads push the list down, and the font steps down until the tallest column fits.
+    const tw = w - 0.5, linesOf = (t, size, bold) => Math.max(1, Math.ceil((t.length * size * (bold ? 0.56 : 0.5)) / 72 / tw));
+    const layout = (fsI) => cs.map((c) => {
+      const headH = linesOf(c.head, 15, true) * 0.27, subY = TOP + 0.25 + headH + 0.04, startY = subY + 0.42;
+      const its = c.items.map((f) => { const nh = linesOf(f.name, fsI, true) * ((fsI * 1.2) / 72); return { f, nh, h: nh + 0.24 + 0.1 }; });
+      return { c, subY, startY, its, end: startY + its.reduce((a, b) => a + b.h, 0) + 0.15 };
+    });
+    let fsI = 14, cols2 = layout(fsI);
+    while (fsI > 10 && Math.max(...cols2.map((x) => x.end)) > BOTTOM) cols2 = layout(--fsI);
+    const ch = Math.min(BOTTOM - TOP, Math.max(2.6, Math.max(...cols2.map((x) => x.end)) - TOP));
+    cols2.forEach(({ c, subY, startY, its }, i) => {
       const x = M + i * (w + gap);
       s.card(x, TOP, w, ch, c.later ? 'FFFFFF' : C.tile);
       if (c.later) s.shape(x, TOP, w, ch, null, { geom: 'roundRect', adj: 6000, line: [C.line, 1] });
       s.rect(x, TOP, w, 0.07, c.later ? C.dim : C.accent);
-      s.text(x + 0.25, TOP + 0.25, w - 0.5, 0.4, [[{ text: c.head, size: 15, bold: true, color: c.later ? C.muted : C.text }]], { inset: 0 });
-      s.text(x + 0.25, TOP + 0.62, w - 0.5, 0.3, [[{ text: c.sub, size: 11, color: C.muted }]], { inset: 0 });
-      c.items.slice(0, 8).forEach((f, k) => s.text(x + 0.25, TOP + 1.05 + k * 0.62, w - 0.5, 0.6, [[{ text: f.name, size: 14, bold: true }], [{ text: f.who, size: 11, color: C.muted }]], { inset: 0, spacing: 1 }));
+      s.text(x + 0.25, TOP + 0.25, tw, subY - TOP - 0.25, [[{ text: c.head, size: 15, bold: true, color: c.later ? C.muted : C.text }]], { inset: 0 });
+      s.text(x + 0.25, subY, tw, 0.3, [[{ text: c.sub, size: 11, color: C.muted }]], { inset: 0 });
+      let y = startY;
+      for (const it of its) {
+        if (y + it.h > TOP + ch) break;
+        s.text(x + 0.25, y, tw, it.h, [[{ text: it.f.name, size: fsI, bold: true }], [{ text: it.f.who, size: Math.min(11, fsI - 2), color: C.muted }]], { inset: 0, spacing: 1 });
+        y += it.h;
+      }
     });
     slides.push(s);
   });
 
   // Definition of done: every feature in one table, grouped by phase
-  const rows = [...m.phases.flatMap((ph) => ph.features.map((f) => [ph.name, f])), ...m.later.map((f) => ['Later', f]), ...(m.phases.length ? [] : m.features.map((f) => ['', f]))];
+  const rows = [...m.phases.flatMap((ph) => ph.features.map((f) => [ph.name, f])), ...m.later.map((f) => [L.later, f]), ...(m.phases.length ? [] : m.features.map((f) => ['', f]))];
   const per = Math.ceil(rows.length / Math.max(1, Math.ceil(rows.length / 9))); // balanced pages, at most 9 rows
   chunk(rows, per).forEach((rs, pi, all) => {
-    const s = content(m, `Definition of done${all.length > 1 ? ` (${pi + 1}/${all.length})` : ''}`, m.doneHeadline);
+    const s = content(m, `${L.definitionOfDone}${all.length > 1 ? ` (${pi + 1}/${all.length})` : ''}`, m.doneHeadline);
     let prev = null;
-    s.table(M, TOP, CW, ['Phase', 'Feature', 'Used by', 'Done when'], rs.map(([ph, f]) => { const label = ph === prev ? '' : ph; prev = ph; return [label, f.name, f.who, f.done || 'To be defined']; }), [0.15, 0.22, 0.13, 0.5], { size: 12, rowH: rs.length > 7 ? 0.5 : 0.6 });
+    s.table(M, TOP, CW, [L.phase, L.feature, L.usedBy, L.doneWhen], rs.map(([ph, f]) => { const label = ph === prev ? '' : ph; prev = ph; return [label, f.name, f.who, f.done || L.toBeDefined]; }), [0.15, 0.22, 0.13, 0.5], { size: 12, rowH: rs.length > 7 ? 0.5 : 0.6 });
     slides.push(s);
   });
 
   // Boundaries and assumptions
   const bcols = [];
-  if (m.nonGoals.length) bcols.push(['Not included', m.nonGoals, C.muted]);
-  if (m.constraints.length) bcols.push(['Constraints', m.constraints, C.muted]);
-  if (m.assumptions.length) bcols.push(['We assumed (please confirm)', m.assumptions, C.amber]);
+  if (m.nonGoals.length) bcols.push([L.notIncluded, m.nonGoals, C.muted]);
+  if (m.constraints.length) bcols.push([L.constraints, m.constraints, C.muted]);
+  if (m.assumptions.length) bcols.push([L.weAssumed, m.assumptions, C.amber]);
   if (bcols.length) {
-    const s = content(m, 'Boundaries', 'What is out of scope, what limits the design, and what we assumed');
+    const s = content(m, L.boundaries, L.boundariesTitle);
     const gap = 0.3, w = (CW - gap * (bcols.length - 1)) / bcols.length;
     const bh = Math.min(BOTTOM - TOP, Math.max(2.4, 1.1 + Math.max(...bcols.map((b) => Math.min(b[1].length, 8))) * 0.62));
     bcols.forEach(([t, items, col], i) => {
@@ -213,14 +245,14 @@ export function buildSlides(m) {
   }
 
   // Next steps
-  const nx = content(m, 'Next steps', m.nextHeadline);
+  const nx = content(m, L.nextSteps, m.nextHeadline);
   const steps = m.next.slice(0, 4), gap = 0.25, w = (CW - gap * (steps.length - 1)) / steps.length;
   steps.forEach((st, i) => {
     const x = M + i * (w + gap);
     nx.card(x, TOP, w, 3.6, st.who === 'You' ? C.accentSoft : C.tile);
     nx.shape(x + 0.3, TOP + 0.3, 0.5, 0.5, st.who === 'You' ? C.accent : C.muted, { geom: 'ellipse' });
     nx.text(x + 0.3, TOP + 0.3, 0.5, 0.5, [[{ text: String(i + 1), size: 16, bold: true, color: C.white }]], { inset: 0, align: 'ctr', anchor: 'ctr' });
-    nx.text(x + 0.95, TOP + 0.38, w - 1.2, 0.35, [[{ text: st.who === 'You' ? 'Your team' : 'Our team', size: 11, bold: true, color: st.who === 'You' ? C.accent : C.muted, caps: true, spc: 80 }]], { inset: 0 });
+    nx.text(x + 0.95, TOP + 0.38, w - 1.2, 0.35, [[{ text: st.who === 'You' ? L.yourTeam : L.ourTeam, size: 11, bold: true, color: st.who === 'You' ? C.accent : C.muted, caps: true, spc: 80 }]], { inset: 0 });
     nx.text(x + 0.3, TOP + 1.0, w - 0.6, 0.9, [[{ text: st.what, size: 16, bold: true }]], { inset: 0, line: 105 });
     nx.text(x + 0.3, TOP + 1.95, w - 0.6, 1.55, [[{ text: st.detail, size: 11, color: C.muted }]], { inset: 0, line: 110 });
   });
@@ -241,8 +273,8 @@ const LAYOUT = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldLayout ${NS} type="blank" preserve="1"><p:cSld name="Blank">${EMPTY_TREE}</p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`;
 const REL = (rels) => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.map(([id, type, target]) => `<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/${type}" Target="${target}"/>`).join('')}</Relationships>`;
 
-export function renderReportPptx(p) {
-  const m = reportModel(p);
+export function renderReportPptx(p, opts = {}) {
+  const m = reportModel(p, opts);
   const slides = buildSlides(m);
   const n = slides.length;
   const files = [];

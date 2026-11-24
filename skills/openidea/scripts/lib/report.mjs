@@ -2,12 +2,15 @@
 // Nothing internal goes in: no discovery quotes, no sources, no ids, no checks, no chores, no meta.
 // Every heading is a conclusion the reader can act on, computed from the data, never typed in.
 import { features } from './diagrams.mjs';
-import { openGaps, analyze } from './analyze.mjs';
+import { openGaps, analyze, QUEUE_SIZE } from './analyze.mjs';
 import { estimate } from './estimate.mjs';
 import { BLUEPRINT_KINDS } from './validate.mjs';
+import { labels } from './i18n.mjs';
+
+// The language of the report being rendered; set by reportModel, read by the formatters below.
+let L = labels('en');
 
 const list = (v) => (Array.isArray(v) ? v : []);
-const plural = (n, one, many = one + 's') => `${n} ${n === 1 ? one : many}`;
 
 function section(body, title) {
   const parts = String(body || '').split(/^##\s+/m);
@@ -19,29 +22,23 @@ const para = (text) => text.split('\n').filter((l) => !/^\s*[-*]/.test(l)).join(
 const sentence = (s) => { const t = String(s || '').trim(); return t && !/[.!?]$/.test(t) ? t + '.' : t; };
 
 // Plain-language phrasing for the client: no blueprint vocabulary.
-const ASSUME = {
-  actors: (n) => `${n} uses the app`,
-  entities: (n) => `The app keeps a record of each ${n.toLowerCase()}`,
-  flows: (n) => `"${n}" is part of the app`,
-  screens: (n) => `There is a "${n}" screen`,
-  integrations: (n) => `The app connects to ${n}`,
-  nfr: (n) => sentence(n).replace(/\.$/, ''),
-};
-const IMPACT = { high: 'High', medium: 'Medium', low: 'Low' };
-
-export const range = (a, b, unit) => `${a === b ? a : `${a}–${b}`}${unit ? ` ${unit}` : ''}`;
+const assume = (kind, n) => (kind === 'nfr' ? sentence(n).replace(/\.$/, '') : L.assume[kind]?.(n));
+export const range = (a, b, unit) => `${a === b ? L.num(a) : `${L.num(a)}–${L.num(b)}`}${unit ? ` ${unit}` : ''}`;
 export const fmtDate = (iso, { year = true } = {}) => {
   if (!iso) return '';
   const d = new Date(iso + 'T00:00:00Z');
   if (isNaN(d)) return iso;
-  return `${d.getUTCDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()]}${year ? ` ${d.getUTCFullYear()}` : ''}`;
+  return `${d.getUTCDate()} ${L.months[d.getUTCMonth()]}${year ? ` ${d.getUTCFullYear()}` : ''}`;
 };
-export const weeks = (n) => `${n} week${n === 1 ? '' : 's'}`;
+export const weeks = (n) => L.weeks(n);
+export const lbl = () => L;
 
-export function reportModel(p) {
+export function reportModel(p, { lang } = {}) {
+  const code = lang || (p.brief && !p.brief.error ? p.brief.data?.language : null) || 'en';
+  L = labels(code);
   const bp = p.blueprint;
   const brief = p.brief && !p.brief.error ? p.brief.body : '';
-  const title = brief.match(/^#\s+(.+)$/m)?.[1] || 'Product definition';
+  const title = brief.match(/^#\s+(.+)$/m)?.[1] || L.titleFallback;
   const chores = new Set(p.ideas.filter((i) => i.data?.type === 'chore').map((i) => i.data.id));
   const open = openGaps(p).filter((g) => !list(g.data.ideas).length || list(g.data.ideas).some((id) => !chores.has(id)));
   const est = estimate(p);
@@ -57,26 +54,35 @@ export function reportModel(p) {
   }));
   const cost = new Map((est?.gapCost || []).map((g) => [g.id, g.days]));
   const blockedBy = new Map();
-  for (const m of a.milestones) for (const id of m.blockingGaps) blockedBy.set(id, m.name);
-  const questions = open.map((g) => ({
+  for (const m of a.milestones) for (const id of m.blockingGaps) if (!blockedBy.has(id)) blockedBy.set(id, m.name); // the earliest phase it holds up
+  const allQuestions = open.map((g) => ({
     question: g.data.question,
-    impact: IMPACT[g.data.impact] || g.data.impact,
+    impact: L.impact[g.data.impact] || g.data.impact,
+    level: g.data.impact,
     days: cost.get(g.data.id) || 0,
-    features: feats.filter((f, i) => raw[i].gaps.includes(g.data.id)).map((f) => f.name),
+    features: (() => {
+      const fs = feats.filter((f, i) => raw[i].gaps.includes(g.data.id)).map((f) => f.name);
+      if (fs.length) return fs;
+      // No feature touched: name the data or parts it affects instead (e.g. "Leave balance"), never ids.
+      return list(g.data.affects).map((ref) => { const [k, id] = String(ref).split('/'); const el = list(bp?.[k]).find((x) => x.id === id); return el ? (el.name || el.requirement || '') : ''; }).filter(Boolean);
+    })(),
     blocks: blockedBy.get(g.data.id) || null,
   }));
+  // At most QUEUE_SIZE decisions per round: more get rubber-stamped. The rest are listed, not hidden.
+  const questions = allQuestions.slice(0, QUEUE_SIZE);
+  const moreQuestions = allQuestions.slice(QUEUE_SIZE);
   const assumptions = [];
   if (bp) for (const kind of Object.keys(BLUEPRINT_KINDS)) for (const el of list(bp[kind])) {
-    if (el.assumption === true && ASSUME[kind]) assumptions.push(sentence(ASSUME[kind](el.name || el.requirement || el.id)));
+    if (el.assumption === true && assume(kind, el.name || el.requirement || el.id)) assumptions.push(sentence(assume(kind, el.name || el.requirement || el.id)));
   }
 
   const phases = (est?.phases || []).filter((ph) => ph.id !== 'all').map((ph, i) => {
     const fs = feats.filter((f) => f.phase === ph.name);
-    const blockers = questions.filter((q) => q.blocks === ph.name);
+    const blockers = allQuestions.filter((q) => q.blocks === ph.name);
     return {
       n: i + 1, name: ph.name, weeks: ph.weeks, likely: ph.likelyWeeks, start: ph.startWeek[0], startLikely: ph.endWeekLikely - ph.likelyWeeks,
       endDate: ph.endDate || null, endDateLikely: ph.endDateLikely || null, features: fs, blockers,
-      headline: `${ph.name}: ${plural(fs.length, 'feature')}, likely ${weeks(ph.likelyWeeks)}${blockers.length ? `, waiting on ${plural(blockers.length, 'decision')}` : ''}`,
+      headline: L.phaseHeadline(ph.name, fs.length, ph.likelyWeeks, blockers.length),
     };
   });
   const later = milestones.length ? feats.filter((f) => !f.phase) : [];
@@ -86,25 +92,26 @@ export function reportModel(p) {
   const defined = feats.filter((f) => f.done).length;
 
   // Conclusions, one per section, built from the numbers.
-  const when = (lik, end) => (end ? `by ${fmtDate(end)}` : `in ${weeks(lik)}`);
-  const headline = timeline
-    ? `${plural(feats.length, 'feature')} in ${plural(phases.length || 1, 'phase')}, likely ready ${when(timeline.likely, timeline.endDateLikely)}${questions.length ? `; ${plural(questions.length, 'open decision')} set${questions.length === 1 ? 's' : ''} how close to that date` : ''}`
-    : `${plural(feats.length, 'feature')} defined${questions.length ? `; ${plural(questions.length, 'decision')} still open` : ''}`;
+  const when = (lik, end) => (end ? L.readyBy(fmtDate(end)) : L.readyIn(lik));
+  const headline = timeline ? L.headline(feats.length, phases.length || 1, when(timeline.likely, timeline.endDateLikely), questions.length) : L.headlineNoPlan(feats.length, questions.length);
+  const vision = para(section(brief, 'Vision')), value = para(section(brief, 'Core Value Prop'));
   const messages = [];
-  if (para(section(brief, 'Vision'))) messages.push({ title: 'What we build', text: sentence(para(section(brief, 'Vision'))) + (para(section(brief, 'Core Value Prop')) ? ' ' + sentence(para(section(brief, 'Core Value Prop'))) : '') });
-  if (phases.length) messages.push({ title: 'How we deliver it', text: `${plural(phases.length, 'phase')}: ${phases.map((x) => x.name).join(', ')}. ${phases[0].name} comes first${phases[0].endDateLikely ? ` and is likely ready by ${fmtDate(phases[0].endDateLikely)}` : ` and likely takes ${weeks(phases[0].likely)}`}.` });
-  if (timeline) messages.push({ title: 'How long it takes', text: `Likely ${weeks(timeline.likely)} with a team of ${timeline.people}; between ${timeline.low} and ${timeline.high} weeks depending on the open decisions.` });
-  if (questions.length) messages.push({ title: 'What we need from you', text: `${plural(questions.length, 'decision')}${questions[0].blocks ? `; ${phases.find((x) => x.name === questions[0].blocks) ? `${questions[0].blocks} cannot start until the first is answered` : ''}` : ''}. Answering them removes up to ${totalDays} days of uncertainty.` });
+  if (vision) messages.push({ title: L.msgBuild, text: sentence(vision) + (value ? ' ' + sentence(value) : '') });
+  if (phases.length) messages.push({ title: L.msgDeliver, text: L.deliverText(phases.length, phases.map((x) => x.name).join(', '), phases[0].name, phases[0].endDateLikely ? fmtDate(phases[0].endDateLikely) : null, phases[0].likely) });
+  if (timeline) messages.push({ title: L.msgLong, text: L.longText(timeline.likely, timeline.people, timeline.low, timeline.high) });
+  if (questions.length) messages.push({ title: L.msgNeed, text: L.needText(questions.length, phases.find((x) => x.name === questions[0].blocks) ? questions[0].blocks : null, totalDays) });
 
   const next = [];
-  if (questions.length) next.push({ who: 'You', what: `Answer the ${plural(questions.length, 'open decision')}`, detail: questions.slice(0, 2).map((q) => q.question).join(' ') });
-  if (phases.length) next.push({ who: 'You', what: `Confirm the scope of ${phases[0].name}`, detail: phases[0].features.map((f) => f.name).join(', ') });
-  if (assumptions.length) next.push({ who: 'You', what: 'Confirm or correct our assumptions', detail: assumptions.join(' ') });
-  next.push({ who: 'We', what: 'Send the updated plan', detail: 'Each answer narrows the timeline; the plan is regenerated from the same definition.' });
+  if (questions.length) next.push({ who: 'You', what: L.nextAnswer(questions.length), detail: L.seeQuestions(questions.length) });
+  if (phases.length) next.push({ who: 'You', what: L.nextScope(phases[0].name), detail: phases[0].features.map((f) => f.name).join(', ') });
+  if (assumptions.length) next.push({ who: 'You', what: L.nextAssume, detail: L.seeAssumptions(assumptions.length) });
+  next.push({ who: 'We', what: L.nextPlan, detail: L.nextPlanDetail });
 
   return {
     title,
-    subtitle: 'Product definition and delivery plan',
+    lang: code,
+    L,
+    subtitle: L.subtitle,
     date: bp?.generated || null,
     headline,
     messages,
@@ -114,57 +121,63 @@ export function reportModel(p) {
     nonGoals: bullets(section(brief, 'Non-goals')),
     constraints: bullets(section(brief, 'Constraints')),
     features: feats,
-    featuresHeadline: `${plural(feats.length, 'feature')}${phases.length ? ` across ${plural(phases.length, 'phase')}` : ''}; ${defined === feats.length ? 'each has a clear definition of done' : `${defined} ${defined === 1 ? 'has' : 'have'} a clear definition of done, ${feats.length - defined} still ${feats.length - defined === 1 ? 'needs' : 'need'} one`}`,
-    doneHeadline: defined === feats.length ? 'What done looks like, feature by feature: the acceptance line for each' : `What done looks like, feature by feature; ${feats.length - defined} still to be defined`,
+    featuresHeadline: L.featuresHeadline(feats.length, phases.length, defined),
+    doneHeadline: L.doneHeadline(feats.length - defined),
     timeline,
-    timelineHeadline: timeline ? `Likely ${weeks(timeline.likely)} with a team of ${timeline.people}${timeline.high > timeline.likely ? `; open decisions could stretch it to ${timeline.high}` : ''}` : '',
+    timelineHeadline: timeline ? L.timelineHeadline(timeline.likely, timeline.people, timeline.high) : '',
     phases,
     questions,
-    questionsHeadline: questions.length ? `${plural(questions.length, 'decision')} from you narrow${questions.length === 1 ? 's' : ''} the plan by up to ${totalDays} days` : 'No open decisions',
+    questionsHeadline: L.questionsHeadline(questions.length, totalDays, moreQuestions.length),
+    moreQuestions,
     assumptions,
     later,
     next,
-    nextHeadline: questions.length ? `Next: ${plural(questions.length, 'decision')} from you, then we lock ${phases[0]?.name || 'the first phase'}` : `Next: confirm ${phases[0]?.name || 'the first phase'} and start`,
+    nextHeadline: L.nextHeadline(questions.length, phases[0]?.name),
   };
 }
 
 export function timelineLine(m) {
   const t = m.timeline;
   if (!t) return '';
-  return `Likely ${weeks(t.likely)}${t.endDateLikely ? ` (${fmtDate(t.endDateLikely)})` : ''}; range ${range(t.low, t.high, 'weeks')}${t.endDate ? ` (${fmtDate(t.endDate[0])} to ${fmtDate(t.endDate[1])})` : ''}, team of ${t.people}.`;
+  return L.timelineLine(t.likely, t.endDateLikely ? fmtDate(t.endDateLikely) : null, t.low, t.high, t.endDate ? `${fmtDate(t.endDate[0])} ${L.to} ${fmtDate(t.endDate[1])}` : null, t.people);
 }
 
 const cell = (v) => String(v ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
-export function renderReportMd(p) {
-  const m = reportModel(p);
-  const out = [`# ${m.title}`, '', `${m.subtitle}${m.date ? ` · ${fmtDate(m.date)}` : ''} · Draft for discussion`, ''];
-  out.push('## Executive summary', '', `**${m.headline}.**`, '');
+export function renderReportMd(p, opts = {}) {
+  const m = reportModel(p, opts);
+  const out = [`# ${m.title}`, '', `${m.subtitle}${m.date ? ` · ${fmtDate(m.date)}` : ''} · ${L.draft}`, ''];
+  out.push(`## ${L.execSummary}`, '', `**${m.headline}.**`, '');
   for (const x of m.messages) out.push(`**${x.title}.** ${x.text}`, '');
   if (m.questions.length) {
-    out.push('## What we need from you', '', `**${m.questionsHeadline}.**`, '');
-    m.questions.forEach((q, i) => out.push(`${i + 1}. **${q.question}**  `, `   ${q.impact} impact${q.features.length ? ` · affects ${q.features.join(', ')}` : ''}${q.days ? ` · could add up to ${q.days} days` : ''}${q.blocks ? ` · ${q.blocks} waits for this` : ''}`, ''));
+    out.push(`## ${L.needFromYou}`, '', `**${m.questionsHeadline}.**`, '');
+    m.questions.forEach((q, i) => out.push(`${i + 1}. **${q.question}**  `, `   ${L.impactSuffix(q.impact)}${q.features.length ? ` · ${L.affects.toLowerCase()} ${q.features.join(', ')}` : ''}${q.days ? ` · ${L.couldAdd.toLowerCase()} ${L.upToDays(q.days)}` : ''}${q.blocks ? ` · ${L.waitsFor(q.blocks)}` : ''}`, ''));
+    if (m.moreQuestions.length) {
+      out.push(`**${L.alsoOpen}**, ${L.alsoOpenLede}:`, '', `| ${L.question} | ${L.impactCol} | ${L.affects} |`, '| --- | --- | --- |');
+      for (const q of m.moreQuestions) out.push(`| ${cell(q.question)} | ${q.impact} | ${cell(q.features.join(', ') || L.wholeProject)} |`);
+      out.push('');
+    }
   }
   if (m.phases.length) {
-    out.push('## Plan and timeline', '', `**${m.timelineHeadline}.**`, '', timelineLine(m), '');
-    out.push('| Phase | Likely | Range | Ready by (likely) |', '| --- | --- | --- | --- |');
-    for (const ph of m.phases) out.push(`| ${ph.n}. ${cell(ph.name)} | ${weeks(ph.likely)} | ${range(ph.weeks[0], ph.weeks[1], 'weeks')} | ${ph.endDateLikely ? fmtDate(ph.endDateLikely) : '–'} |`);
-    out.push('', 'The range is wide on purpose: its upper end prices in every detail not yet defined, and it narrows as decisions are made.', '');
+    out.push(`## ${L.planTimeline}`, '', `**${m.timelineHeadline}.**`, '', timelineLine(m), '');
+    out.push(`| ${L.phase} | ${L.likely} | ${L.range} | ${L.readyByLikely} |`, '| --- | --- | --- | --- |');
+    for (const ph of m.phases) out.push(`| ${ph.n}. ${cell(ph.name)} | ${weeks(ph.likely)} | ${range(ph.weeks[0], ph.weeks[1], L.weeksUnit)} | ${ph.endDateLikely ? fmtDate(ph.endDateLikely) : '–'} |`);
+    out.push('', L.rangeNote, '');
   }
-  out.push('## Scope', '', `**${m.featuresHeadline}.**`, '');
-  const groups = m.phases.length ? m.phases.map((ph) => [`${ph.n}. ${ph.name}`, ph.features]) : [['Features', m.features]];
-  if (m.later.length) groups.push(['Later', m.later]);
+  out.push(`## ${L.scope}`, '', `**${m.featuresHeadline}.**`, '');
+  const groups = m.phases.length ? m.phases.map((ph) => [`${ph.n}. ${ph.name}`, ph.features]) : [[L.featuresWord, m.features]];
+  if (m.later.length) groups.push([L.later, m.later]);
   for (const [name, fs] of groups) {
     if (!fs.length) continue;
-    out.push(`### ${name}`, '', '| Feature | Used by | Done when |', '| --- | --- | --- |');
-    for (const f of fs) out.push(`| ${cell(f.name)} | ${cell(f.who)} | ${cell(f.done || 'To be defined')} |`);
+    out.push(`### ${name}`, '', `| ${L.feature} | ${L.usedBy} | ${L.doneWhen} |`, '| --- | --- | --- |');
+    for (const f of fs) out.push(`| ${cell(f.name)} | ${cell(f.who)} | ${cell(f.done || L.toBeDefined)} |`);
     out.push('');
   }
   if (m.assumptions.length || m.nonGoals.length || m.constraints.length) {
-    out.push('## Boundaries and assumptions', '');
-    if (m.nonGoals.length) out.push('**Not included**', '', m.nonGoals.map((a) => `- ${a}`).join('\n'), '');
-    if (m.constraints.length) out.push('**Constraints**', '', m.constraints.map((a) => `- ${a}`).join('\n'), '');
-    if (m.assumptions.length) out.push('**We assumed** (please confirm)', '', m.assumptions.map((a) => `- ${a}`).join('\n'), '');
+    out.push(`## ${L.boundariesAssumptions}`, '');
+    if (m.nonGoals.length) out.push(`**${L.notIncluded}**`, '', m.nonGoals.map((a) => `- ${a}`).join('\n'), '');
+    if (m.constraints.length) out.push(`**${L.constraints}**`, '', m.constraints.map((a) => `- ${a}`).join('\n'), '');
+    if (m.assumptions.length) out.push(`**${L.weAssumed}**`, '', m.assumptions.map((a) => `- ${a}`).join('\n'), '');
   }
-  out.push('## Next steps', '', `**${m.nextHeadline}.**`, '', m.next.map((n, i) => `${i + 1}. **${n.what}** (${n.who}). ${n.detail}`).join('\n'), '');
+  out.push(`## ${L.nextSteps}`, '', `**${m.nextHeadline}.**`, '', m.next.map((n, i) => `${i + 1}. **${n.what}** (${n.who === 'You' ? L.yourTeam : L.ourTeam}). ${n.detail}`).join('\n'), '');
   return out.join('\n');
 }

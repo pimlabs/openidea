@@ -78,6 +78,7 @@ Skill and command files don't live in this project either — they're loaded fro
 ---
 schema_version: 2
 project_status: active   # active | cancelled
+language: en             # optional: default language of the finished report (en | id)
 ---
 ```
 
@@ -104,6 +105,7 @@ category: Booking & Scheduling
 created: 2026-07-16
 updated: 2026-07-20
 source: discovery/2026-07-16-session.md     # optional, set by /openidea:capture import mode
+title: Booking over WhatsApp                 # optional: a readable name for people (dashboard); the id stays the key
 replaces: "Manual booking via spreadsheet"    # optional
 depends_on: []                                 # optional, list of other idea ids
 needs_clarification: false                      # true if captured from input too vague to fill in fully
@@ -226,6 +228,7 @@ The concrete app definition, **derived** from the ideas by `/openidea:blueprint`
   "flows":       [{"id": "book", "name": "...", "actor": "patient", "trigger": "...", "steps": ["..."], "scenarios": {"success": "...", "alternative": ["..."], "failure": ["..."], "empty_state": "..."}, "derived_from": ["..."]}],
   "screens":     [{"id": "board", "name": "...", "flows": ["book"], "elements": ["..."], "derived_from": ["..."]}],
   "integrations":[{"id": "whatsapp", "name": "...", "direction": "in | out | both", "data": "...", "derived_from": ["..."]}],
+  "rules":       "optional on entities and flows: [\"Barber minimum pay Rp4.4M with full attendance\", \"Proration formula (TBD)\"]",
   "nfr":         [{"id": "offline", "category": "offline | scale | latency | security | privacy | availability | compatibility", "requirement": "...", "derived_from": ["..."]}]
 }
 ```
@@ -233,10 +236,11 @@ The concrete app definition, **derived** from the ideas by `/openidea:blueprint`
 Rules (all checked by the CLI):
 - Every element has a unique `id` within its kind and a `derived_from` list of idea ids that exist.
 - An element the app needs but no idea states gets `"derived_from": []` **and** `"assumption": true`. That is a hidden assumption, and usually a gap.
-- **Mandatory slots** (the depth score): actor `description`; entity `attributes` + all four `lifecycle` keys; flow `actor`, `trigger`, `steps`, `scenarios.success`, `scenarios.failure`, `scenarios.empty_state`; screen `flows` + `elements`; integration `direction` + `data`; nfr `category` + `requirement`. Unknown = `"TBD"` (counted as missing), never invented. A deliberate "does not apply" is written out (`"Never"`, `"n/a: read-only"`), which counts as filled.
+- **Mandatory slots** (the depth score): actor `description`; entity `attributes` + all four `lifecycle` keys; flow `actor`, `trigger`, `steps`, `scenarios.success`, `scenarios.failure`, `scenarios.empty_state`; screen `flows` + `elements`; integration `direction` + `data`; nfr `category` + `requirement`. Unknown = `"TBD"` (counted as missing), never invented; a list item ending in `TBD` (`"Phone offline: TBD"`, `"Grace period (TBD)"`) leaves the whole slot missing. A deliberate "does not apply" is written out (`"Never"`, `"n/a: read-only"`), which counts as filled.
 - References must resolve: a flow's `actor`, a screen's `flows`, a permission's `actor`/`entity`.
 - Two permissions with the same actor, action, and entity but opposite `allow` are a **conflict**.
 - Every active `feature` idea should appear in some `derived_from`; one that does not is either stale or too vague to build.
+- `rules` (optional, on entities and flows) lists the business rules the element must enforce: calculations, policies, validations, exceptions, one per line, quoted or paraphrased from the ideas and sources. Each rule costs time in the estimate, and a rule ending in `TBD` widens it, so a payroll or pricing engine is not sized like one table and two screens. List every rule the sources state; do not invent rules.
 - `states` (optional) lists an entity's statuses, the first being the initial one; `transitions` say what moves between them, via a `flow` id or a plain `event`. Any entity with a `status` attribute should define them. A transition must use known states; a state no transition reaches, or a transition no flow triggers, is flagged as a likely blind spot.
 
 ### 3.10 `blueprint/diagrams.md` and the dashboard diagrams
@@ -288,7 +292,7 @@ Every behaviour the blueprint leaves undefined is drawn in red (a dashed button 
 
 Every output is one of three kinds, never a mix: **raw** data for tools (`blueprint.json`, `estimate.json`, `work-breakdown.csv`), **working** views for the team (dashboard, `prototype/review.html`), and **finished** deliverables for clients and users (`prototype/index.html`, the report). Finished outputs carry no meta: no ids, no file paths, no red markers, no commands.
 
-`openidea report --format md|pptx|pdf` renders one content model in the chosen format, written like a consultant's deliverable: every section title is a conclusion computed from the data (e.g. "3 decisions from you narrow the plan by up to 8.5 days"), never a topic label. Sections, in order: cover; executive summary (one-line headline, three numbers: features, likely weeks with range, decisions needed; key messages); what we need from you (one card per open question: impact, features it affects, days it could add, the phase it blocks); plan and timeline (Gantt on the likely schedule with ready dates, plus the whole-project range); scope and definition of done per phase; boundaries (non-goals, constraints, assumptions to confirm, in plain language); next steps split between "your team" and "our team". "Likely" is the midpoint of the range; the range's upper end prices in what is not yet decided. PPTX (16:9) and PDF (A4) are written without dependencies (raw OOXML, base-14 PDF fonts); the PPTX stays editable. Same inputs, same bytes. Check layout changes by rendering every slide and page (LibreOffice to PDF, then `pdftoppm`).
+`openidea report --format md|pptx|pdf` renders one content model in the chosen format, written like a consultant's deliverable: every section title is a conclusion computed from the data (e.g. "3 decisions from you narrow the plan by up to 8.5 days"), never a topic label. Sections, in order: cover; executive summary (one-line headline, three numbers: features, likely weeks with range, decisions needed; key messages); what we need from you (the top 5 open questions as cards: impact, features it affects, days it could add, the phase it blocks; the rest in one compact table, settled in the next round, so the client is never asked 20 things at once); plan and timeline (Gantt on the likely schedule with ready dates, plus the whole-project range); scope and definition of done per phase; boundaries (non-goals, constraints, assumptions to confirm, in plain language); next steps split between "your team" and "our team". "Likely" is the midpoint of the range; the range's upper end prices in what is not yet decided. PPTX (16:9) and PDF (A4) are written without dependencies (raw OOXML, base-14 PDF fonts); the PPTX stays editable. Same inputs, same bytes. `--lang en|id` sets the language of the words the report adds (headings, labels, conclusions, dates, decimal comma); the default is `language:` in `BRIEF.md`'s frontmatter, else English. Content from the files is shown as written. Check layout changes by rendering every slide and page (LibreOffice to PDF, then `pdftoppm`).
 
 ## 4. Command Index
 
@@ -395,7 +399,7 @@ node <skill dir>/scripts/openidea.mjs report --format pptx  # reports/report.ppt
 
 `validate` checks: frontmatter parses; idea id = file name; status enums; status matches folder; `killed` → `triage_note`; `merged` → `merged_into`; `split` → `split_into`; `ready` → `category`; history is current; `depends_on` exists and has no cycle; merge targets are not killed; gap fields, enums, `question`, and `resolution`; the ready gate; milestone ID format and uniqueness, missing ideas, an idea in two milestones, dependency order across milestones; blueprint ids, `derived_from`, assumptions, references, permission conflicts, ideas missing from the blueprint, and a stale blueprint.
 
-The dashboard has five sections, ordered by the questions a reader brings: **Overview** (what needs my decision: health stats, the ranked decision queue, milestone gates), **Features** (what the app does; each feature page holds its activity diagram and open gaps), **Roadmap** (what ships when), **Blueprint** (how it is structured: system context, elements with their state machines, permission matrix), **Ideas** (where it all came from). Checks and the full diagram list are reached from Overview and Blueprint, not from the main navigation. On phones the navigation is a bottom tab bar.
+The dashboard has five sections, ordered by the questions a reader brings. **Overview** reads top to bottom as the project's story, so anyone can evaluate it without other context: what the app is (vision, users, value, what it replaces today, non-goals, constraints), then 1 who uses it and what each role does, 2 what it does (every idea's problem and done line, grouped by phase), 3 how it is delivered (phases with likely weeks), 4 how clear the definition is (health stats), 5 what needs a decision (the top 5 gaps; the rest folded). The other sections: **Features** (every feature; each feature page holds its activity diagram and open gaps), **Roadmap** (what ships when), **Blueprint** (how it is structured: system context, elements with their state machines, permission matrix), **Ideas** (where it all came from). Checks and the full diagram list are reached from Overview and Blueprint, not from the main navigation. On phones the navigation is a bottom tab bar.
 
 Frontmatter must stay within the YAML subset the CLI reads: `key: value`, nested maps by indentation, block lists (`- item`), flow lists (`[a, b]`), flow maps (`{k: v}`), quoted strings, `null`, booleans, numbers, `|`/`>` block scalars, and `#` comments. Anything else is reported as a parse error, never guessed.
 

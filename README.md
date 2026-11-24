@@ -78,7 +78,7 @@ Each gap carries a kind (decision, clarification, desirability, feasibility, com
 
 ## Dashboard
 
-`/openidea:dashboard` (or `openidea dashboard`) writes a single self-contained HTML file in five sections: Overview (health, the decision queue, milestone gates), Features (one page per flow with its activity diagram), Roadmap (phases, timeline range, what open gaps cost), Blueprint (context diagram, elements with state machines, permission matrix, missing details in red) and Ideas. It works on phones too.
+`/openidea:dashboard` (or `openidea dashboard`) writes a single self-contained HTML file in five sections: Overview (the project's story in order: what the app is and for whom, who uses it, what it does, how it is delivered, how clear the definition is, and the top 5 decisions), Features (one page per flow with its activity diagram), Roadmap (phases, timeline range, what open gaps cost), Blueprint (context diagram, elements with state machines, permission matrix, missing details in red) and Ideas. It works on phones too.
 
 **Diagrams** are generated from the blueprint by code, never drawn by a model: a system context diagram, an activity diagram per flow (undefined failure or empty-state branches show as red nodes), and a state machine per entity (unreachable states in red). They are Mermaid, so `openidea/blueprint/diagrams.md` renders directly on GitHub; the dashboard loads Mermaid from a CDN and shows the source text when offline. `--client` writes a separate `client.html` without source quotes, gap details, chores, or checks, safe to send outside.
 
