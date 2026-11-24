@@ -177,3 +177,23 @@ test('prototype: renders roles, flows and data from the blueprint, deterministic
   assert.match(html, /"mode":"user"/);
   assert.match(review, /"mode":"review"/);
 });
+
+test('report: same content in md, pptx and pdf, client-safe, reproducible', async () => {
+  const { renderReportMd, reportModel } = await import('../skills/openidea/scripts/lib/report.mjs');
+  const { renderReportPdf } = await import('../skills/openidea/scripts/lib/pdf.mjs');
+  const { renderReportPptx } = await import('../skills/openidea/scripts/lib/pptx.mjs');
+  const p = loadProject(FIXTURE);
+  const m = reportModel(p);
+  assert.equal(m.features.length, 2);
+  assert.equal(m.questions[0].impact, 'High');
+  const md = renderReportMd(p);
+  for (const banned of ['discovery/', 'gaps/', '/openidea:', 'refund-permission', 'derived_from']) assert.ok(!md.includes(banned), `report must not contain ${banned}`);
+  assert.equal(md, renderReportMd(loadProject(FIXTURE)));
+  const pdf = renderReportPdf(p);
+  assert.equal(pdf.subarray(0, 8).toString('latin1'), '%PDF-1.4');
+  assert.ok(pdf.equals(renderReportPdf(loadProject(FIXTURE))));
+  const pptx = renderReportPptx(p);
+  assert.equal(pptx.readUInt32LE(0), 0x04034b50);
+  assert.ok(pptx.includes(Buffer.from('ppt/slides/slide1.xml')));
+  assert.ok(pptx.equals(renderReportPptx(loadProject(FIXTURE))));
+});

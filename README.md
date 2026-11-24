@@ -49,6 +49,10 @@ Everything stays file-based: markdown and JSON under `openidea/`, git-friendly a
   → prototype/index.html for real users (looks like the app, nothing meta) and
     review.html for the team (undefined behaviour in red, notes become gaps)
 
+/openidea:report pptx
+  → the finished, client-safe report as Markdown, PowerPoint or PDF:
+    features, phases and timeline, open questions, assumptions, next steps
+
 /openidea:dashboard
   → openidea/dashboard/index.html: one file, opens offline in any browser
 

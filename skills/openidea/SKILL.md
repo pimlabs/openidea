@@ -37,6 +37,8 @@ project/
 │   │   ├── estimate.json        ← raw: phases, timeline ranges, gap cost (section 3.11)
 │   │   └── work-breakdown.csv   ← raw: one row per work item, for spreadsheets
 │   ├── calibration.md           ← team capacity + actuals per milestone, human-owned (section 3.11)
+│   ├── reports/
+│   │   └── report.md|pptx|pdf   ← generated finished report, client-safe (section 3.13)
 │   ├── prototype/
 │   │   ├── index.html           ← generated prototype for real users, nothing meta (section 3.12)
 │   │   └── review.html          ← the same with undefined behaviour marked, for the team
@@ -282,6 +284,12 @@ An estimate is a range with its reasons, not a commitment. Present the range, ne
 
 Every behaviour the blueprint leaves undefined is drawn in red (a dashed button where nobody decided who may act, a missing outcome, an entity with no attributes, a dead-end state). That is the point: clicking through as each role is a walkthrough (section 10.1) that a non-technical person can do. "Note a problem" copies `/openidea:prototype feedback "<view> as <role>: <note>"`; pasting it creates or extends a gap with `found_by: prototype`.
 
+### 3.13 `reports/report.<md|pptx|pdf>`
+
+Every output is one of three kinds, never a mix: **raw** data for tools (`blueprint.json`, `estimate.json`, `work-breakdown.csv`), **working** views for the team (dashboard, `prototype/review.html`), and **finished** deliverables for clients and users (`prototype/index.html`, the report). Finished outputs carry no meta: no ids, no file paths, no red markers, no commands.
+
+`openidea report --format md|pptx|pdf` renders one content model in the chosen format, all with the same sections: cover, summary (vision, users, value, scope, timeline, number of open questions), features (used by, done when, phase), phases and timeline (ranges with end dates), open questions (impact and the days each could add), assumptions in plain language, later, boundaries (non-goals, constraints from the BRIEF), next steps. PPTX and PDF are written without dependencies (raw OOXML, base-14 PDF fonts); the PPTX stays editable. Same inputs, same bytes.
+
 ## 4. Command Index
 
 **Core** (always applies, the solo/default path):
@@ -296,6 +304,7 @@ Every behaviour the blueprint leaves undefined is drawn in red (a dashed button 
 | `/openidea:plan` | ≥1 idea `ready` | `ROADMAP.md` |
 | `/openidea:estimate` | `blueprint.json` exists | raw `blueprint/estimate.json` + `work-breakdown.csv` (phases, ranges, cost of open gaps); `actual` records calibration |
 | `/openidea:prototype` | `blueprint.json` exists | `prototype/index.html` (real users) + `review.html` (team); `feedback` turns a note into a gap |
+| `/openidea:report` | `blueprint.json` exists | `reports/report.md`, `.pptx` or `.pdf`: the finished, client-safe document |
 | `/openidea:dashboard` | `BRIEF.md` exists | `dashboard/index.html` (and `client.html` on request) |
 | `/openidea:spec-draft` | `openspec/` exists, target milestone has ≥1 idea `ready` and a clear gate | `openspec/changes/<ID>/{proposal,design,tasks}.md` + `specs/<capability>/spec.md`, idea → `promoted` |
 
@@ -381,6 +390,7 @@ node <skill dir>/scripts/openidea.mjs dashboard           # write dashboard/inde
 node <skill dir>/scripts/openidea.mjs dashboard --client  # write dashboard/client.html
 node <skill dir>/scripts/openidea.mjs estimate            # write blueprint/estimate.json + work-breakdown.csv (raw)
 node <skill dir>/scripts/openidea.mjs prototype           # write prototype/index.html (users) + review.html (team)
+node <skill dir>/scripts/openidea.mjs report --format pptx  # reports/report.pptx (also md, pdf)
 ```
 
 `validate` checks: frontmatter parses; idea id = file name; status enums; status matches folder; `killed` → `triage_note`; `merged` → `merged_into`; `split` → `split_into`; `ready` → `category`; history is current; `depends_on` exists and has no cycle; merge targets are not killed; gap fields, enums, `question`, and `resolution`; the ready gate; milestone ID format and uniqueness, missing ideas, an idea in two milestones, dependency order across milestones; blueprint ids, `derived_from`, assumptions, references, permission conflicts, ideas missing from the blueprint, and a stale blueprint.
