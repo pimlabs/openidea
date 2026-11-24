@@ -64,7 +64,8 @@ const TEMPLATE = String.raw`<!doctype html>
 :root{--bg:#fafafa;--surface:#fff;--sunk:#f2f3f5;--border:#e2e4e8;--text:#1a1c20;--muted:#5b606b;--dim:#8a909b;--accent:#2558c9;--accent-soft:#eaf0fd;--red:#c0271d;--red-soft:#fdeceb;--amber:#9a6200;--amber-soft:#fdf3dc;--orange:#b4500a;--orange-soft:#fdeee2;--green:#1d7a46;--green-soft:#e4f5ea;--purple:#6d3fb0;--purple-soft:#f1eafb;--gray:#6b7280;--gray-soft:#eef0f3;--accent-line:rgba(37,88,201,.4);--shadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.07)}
 @media (prefers-color-scheme:dark){:root{--bg:#111316;--surface:#181b20;--sunk:#20242a;--border:#2d323a;--text:#e8eaee;--muted:#a6acb6;--dim:#737a85;--accent:#7fa8ff;--accent-soft:#1a2540;--red:#ff8577;--red-soft:#3a1b19;--amber:#f2c35b;--amber-soft:#33290f;--orange:#ffa564;--orange-soft:#3a2414;--green:#5fd394;--green-soft:#15291e;--purple:#c4a2ff;--purple-soft:#2a2040;--gray:#9aa1ad;--gray-soft:#262a31;--accent-line:rgba(127,168,255,.45);--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35)}}
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overscroll-behavior-y:none}
+#mnav{display:none}
 body{margin:0;overflow-wrap:break-word;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 a{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:var(--accent-line)}a:hover{text-decoration-color:currentColor}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
@@ -153,11 +154,15 @@ pre.mermaid.src{text-align:left;white-space:pre-wrap;font:12.5px ui-monospace,SF
 header{position:static}
 .bar{gap:8px;padding-top:max(10px,env(safe-area-inset-top))}
 .mode{margin-left:auto}
-nav{position:fixed;left:0;right:0;bottom:0;z-index:10;display:grid;grid-template-columns:repeat(5,1fr);gap:0;background:var(--surface);border-top:1px solid var(--border);padding:4px max(4px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(4px,env(safe-area-inset-left))}
+/* Phones: the section tabs sit under the title and stick to the top. Not fixed to the bottom, where iOS Safari's own toolbar moves with the scroll. */
+#nav{display:none}
+#mnav{position:-webkit-sticky;position:sticky;top:0;z-index:10;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:var(--bg);border-bottom:1px solid var(--border);padding:4px max(6px,env(safe-area-inset-right)) 4px max(6px,env(safe-area-inset-left))}
 nav a{text-align:center;padding:10px 2px;font-size:12.5px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px}
 nav a .badge{margin-left:3px;min-width:16px;line-height:16px;font-size:10.5px}
-main{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+main{padding-bottom:calc(40px + env(safe-area-inset-bottom))}
+header{border-bottom:0}
 main{padding-top:16px}
+h2{scroll-margin-top:64px}
 h1{font-size:21px}
 .slot{grid-template-columns:1fr;gap:0}
 input,select,button{font-size:16px}
@@ -189,6 +194,7 @@ td.emptycell{display:none}
 </head>
 <body>
 <header><div class="bar"><div class="brand" id="brand"></div><nav id="nav"></nav><span class="mode" id="mode"></span></div></header>
+<nav id="mnav" aria-label="Sections"></nav>
 <main id="app"></main>
 <script type="application/json" id="data">/*__DATA__*/</script>
 <script>
@@ -491,7 +497,8 @@ function route(){
   else if(page==='blueprint') html=blueprint(parts[1],parts[2]); else if(page==='features') html=features(); else if(page==='diagrams') html=diagrams(parts[1]); else if(page==='roadmap') html=roadmap(); else if(page==='issues'&&!CLIENT) html=issues(); else {page='overview';html=overview();}
   var navKey = {gap:'overview',issues:'overview',idea:'ideas',feature:'features',diagrams:'blueprint'}[page]||page;
   var openN = D.gaps.filter(openGap).length;
-  document.getElementById('nav').innerHTML = PAGES.map(function(p){return '<a href="#'+p[0]+'"'+(p[0]===navKey?' class="on"':'')+'>'+p[1]+(p[0]==='overview'&&openN?'<span class="badge">'+openN+'</span>':'')+'</a>';}).join('');
+  var navHtml = PAGES.map(function(p){return '<a href="#'+p[0]+'"'+(p[0]===navKey?' class="on"':'')+'>'+p[1]+(p[0]==='overview'&&openN?'<span class="badge">'+openN+'</span>':'')+'</a>';}).join('');
+  document.getElementById('nav').innerHTML = navHtml; document.getElementById('mnav').innerHTML = navHtml;
   app.innerHTML = html; labelCells(app); drawMermaid(); if(parts[0]!=='queue') window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route); route();
