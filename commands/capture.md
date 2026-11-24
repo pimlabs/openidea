@@ -2,7 +2,7 @@
 description: Capture a new idea (free-form story or extracted from a document) into openidea/ideas/<slug>.md
 ---
 
-Load the `openidea` skill (Skill tool) to read section 3.2 (idea schema), section 7 (INDEX.md regeneration) before proceeding.
+Load the `openidea` skill (Skill tool) to read sections 3.2 (idea schema), 9 (CLI), and 10.4 (new ideas mid-project) before proceeding.
 
 Input from the user (free-form story, or a path/content of a meeting-notes/transcript document): $ARGUMENTS
 
@@ -19,10 +19,10 @@ Input from the user (free-form story, or a path/content of a meeting-notes/trans
 3. Structure into 5Q (schema 3.2 in SKILL.md), set `type: feature` or `type: chore` accordingly (skip point 3 "who uses it" for chore).
 4. If the input is too vague to fill a given field: fill that field with an explicit `TBD`, set `needs_clarification: true`. **Don't make things up.**
 5. Partial processing: if one item in a batch is ambiguous, process the clear ones first, then ask back about the ambiguous one (don't block the whole batch).
-6. Advisory guard rail: if a new idea appears relevant to a milestone that already has a folder under `openspec/changes/`, give a light notice (not blocking).
+6. **Impact of a new idea** (section 10.4, advisory, never blocking): if `blueprint/blueprint.json` or `ROADMAP.md` exists, report which existing ideas it overlaps or contradicts, which blueprint elements it would add or change, which milestones it touches (flag any that are `approved` or already have a folder under `openspec/changes/`), and classify it as additive, modifying, or conflicting. Recommend `/openidea:blueprint` and `/openidea:evaluate` for the affected ideas.
 
 ## Output
 
 - New file `openidea/ideas/<slug>.md` per idea, status `captured`, `history: [{date: <today>, status: captured}]`.
 - Document mode: archive the original source to `openidea/discovery/<session>.md`, fill the `source` field on each idea extracted from it.
-- Regenerate `openidea/ideas/INDEX.md` (procedure in SKILL.md section 7).
+- Run `openidea validate` (fix errors this command introduced), then `openidea index` (section 9).

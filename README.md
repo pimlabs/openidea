@@ -1,6 +1,8 @@
 # OpenIdea
 
-A Claude Code plugin for managing a product idea lifecycle end-to-end, file-based — from product vision (`BRIEF.md`), raw idea capture, evaluation & categorization, roadmap planning, through to drafting technical specs into [OpenSpec](https://github.com/Fission-AI/OpenSpec).
+A Claude Code plugin that makes an app's definition clear **before** anyone builds it. Meeting notes and documents hide blind spots that usually surface mid-build; OpenIdea forces them out in the idea phase. It captures ideas, derives a concrete blueprint from them, finds the gaps (hidden assumptions, contradictions, missing details), proposes the cheapest way to validate each one, and shows everything in an HTML dashboard. People only validate and approve. Approved milestones become [OpenSpec](https://github.com/Fission-AI/OpenSpec) changes.
+
+Everything stays file-based: markdown and JSON under `openidea/`, git-friendly and readable without any tool.
 
 ![OpenIdea demo: init, capture, evaluate, plan](docs/demo.gif)
 
@@ -15,57 +17,96 @@ A Claude Code plugin for managing a product idea lifecycle end-to-end, file-base
 
 ## Quick Start
 
-A typical solo flow, start to finish:
-
 ```
 /openidea:init
-  → tell it your product vision in your own words
-  → writes openidea/BRIEF.md
+  → describe the product in your own words → openidea/BRIEF.md
 
 /openidea:capture
-  → describe an idea, or paste in meeting notes to extract several
-  → writes openidea/ideas/<slug>.md, status: captured
+  → describe ideas, or paste meeting notes to extract several → openidea/ideas/<slug>.md
+
+/openidea:blueprint
+  → derives actors, entities, permissions, flows, screens, integrations, NFR
+    from the ideas → openidea/blueprint/blueprint.json
+  → every element is traced to its ideas; anything no idea states is flagged
+    as a hidden assumption
 
 /openidea:evaluate
-  → reviews captured ideas for overlap/conflict, recommends a status
-  → you approve → status: ready
+  → hunts for blind spots (probe, coverage, consistency, domain)
+  → writes each as openidea/gaps/<id>.md with a proposed validation
+  → shows a decision queue of at most 5 gaps, recommends idea status
+
+/openidea:resolve <gap-id>
+  → record the answer or evidence, or an accepted risk; updates the ideas
 
 /openidea:plan
-  → arranges ready ideas into a milestone
-  → writes openidea/ROADMAP.md
+  → arranges ready ideas into milestones with an explicit ID → openidea/ROADMAP.md
 
-/openidea:spec-draft <milestone name>
-  → requires an existing openspec/ folder (from OpenSpec tooling)
-  → generates openspec/changes/<milestone>/{proposal,design,tasks}.md
-  → idea status: promoted
+/openidea:dashboard
+  → openidea/dashboard/index.html: one file, opens offline in any browser
+
+/openidea:spec-draft <milestone>
+  → requires an existing openspec/ folder and a clear gate
+  → openspec/changes/<ID>/{proposal,design,tasks}.md + specs/<capability>/spec.md
 ```
 
-If a client or an external team is involved, `/openidea:compile` (client-facing proposal narrative) and `/openidea:export` (technical handoff package) slot in between `plan` and `spec-draft`; `/openidea:spec-audit` checks the OpenSpec output against the source ideas afterward. See `skills/openidea/SKILL.md` section 4 for when each applies.
+If a client or an external team is involved, `/openidea:compile` (client-facing proposal narrative) and `/openidea:export` (technical handoff package) slot in between `plan` and `spec-draft`, `/openidea:dashboard client` produces a client-safe dashboard, and `/openidea:spec-audit` checks the OpenSpec output against the source ideas afterward.
+
+## How blind spots are found
+
+Blind spots are, by definition, not written in the notes, so reading them more carefully does not help. OpenIdea uses four mechanisms:
+
+| Mechanism | What it catches |
+|---|---|
+| **Derivation probe** | Turning ideas into a concrete blueprint forces decisions. Anything the app needs that no idea states is a hidden assumption; any idea that produces nothing is too vague to build. |
+| **Coverage** | Each idea checked against a checklist of what usually gets forgotten: roles and permissions, data lifecycle, empty and error states, failure modes, offline/scale, integrations, privacy, migration, success metric. Add your own domain checklists in `openidea/checklists/`. |
+| **Consistency** | Ideas against each other, against the source notes, and against the brief's non-goals. Structural conflicts (like two ideas giving opposite permissions) are caught by code, not by re-reading. |
+| **Domain** | Regulations and known pitfalls for the product's domain that nobody mentioned. |
+
+Each gap carries a kind (decision, clarification, desirability, feasibility, compliance), and the kind decides the cheapest validation: a closed question to the owner, a question quoting both conflicting sources, a 5-interview script, a time-boxed spike, or a regulation check. An idea cannot become `ready` while a high-impact gap on it is open, unless someone records an accepted risk.
+
+## Dashboard
+
+`/openidea:dashboard` (or `openidea dashboard`) writes a single self-contained HTML file with: an overview (open high-impact gaps, ideas ready, blueprint depth, hidden assumptions), the decision queue, filterable ideas, the blueprint with a permission matrix and missing details in red, the roadmap with each milestone's gate, and the check results. `--client` writes a separate `client.html` without source quotes, gap details, chores, or checks, safe to send outside.
+
+## CLI
+
+The deterministic part runs as a zero-dependency Node.js (18+) script bundled with the skill. Commands call it automatically; you can also run it yourself from your project root:
+
+```
+node <plugin>/skills/openidea/scripts/openidea.mjs validate      # exit 1 on any rule violation
+node <plugin>/skills/openidea/scripts/openidea.mjs index         # regenerate ideas/INDEX.md
+node <plugin>/skills/openidea/scripts/openidea.mjs dashboard [--client]
+```
 
 ## Commands
 
 | Command | What it does |
 |---|---|
 | `/openidea:init` | Structure a product vision → `openidea/BRIEF.md` |
-| `/openidea:capture` | Capture a new idea (free-form story or document extraction) |
-| `/openidea:evaluate` | Evaluate `captured` ideas — overlap/conflict, status recommendation |
+| `/openidea:capture` | Capture new ideas (free-form or extracted from a document), with an impact report for ideas added mid-project |
+| `/openidea:blueprint` | Derive the traced blueprint from the ideas, flag hidden assumptions |
+| `/openidea:evaluate` | Find blind spots, write gaps with validation plans, recommend status |
+| `/openidea:resolve` | Close a gap with evidence or an accepted risk |
 | `/openidea:plan` | Arrange `ready` ideas into `openidea/ROADMAP.md` |
-| `/openidea:spec-draft` | Generate an OpenSpec proposal/design/tasks from a milestone |
+| `/openidea:dashboard` | Generate the HTML dashboard (internal or client) |
+| `/openidea:spec-draft` | Generate an OpenSpec change, including spec deltas, from a milestone |
 | `/openidea:compile` | Compile `ready` ideas into a client-facing proposal narrative |
 | `/openidea:export` | Package a milestone's technical content for external handoff |
 | `/openidea:spec-audit` | Read-only drift audit — OpenSpec vs proposal/ideas |
 
-Full detail on the philosophy, file schemas, and status lifecycle: see `skills/openidea/SKILL.md`.
+Full detail on the philosophy, file schemas, and status lifecycle: see `skills/openidea/SKILL.md`. A complete example project lives in `tests/fixtures/clinic/`.
 
 ## Structure
 
 ```
-.claude-plugin/       plugin + marketplace manifest
-skills/openidea/      schema & principles (shared reference for all commands)
-commands/             8 commands, /openidea:*
+.claude-plugin/              plugin + marketplace manifest
+skills/openidea/SKILL.md     schema & principles (shared reference for all commands)
+skills/openidea/scripts/     the openidea CLI (validate, index, dashboard)
+commands/                    11 commands, /openidea:*
+tests/                       CLI tests and the example project
 ```
 
-Once the plugin is used in a project, the commands above write state into an `openidea/` folder at that project's root.
+Once the plugin is used in a project, the commands write state into an `openidea/` folder at that project's root.
 
 ## Development
 
@@ -73,7 +114,7 @@ Once the plugin is used in a project, the commands above write state into an `op
 scripts/test.sh
 ```
 
-Runs `claude plugin validate` plus a smoke test of all 8 `/openidea:*` commands via `--plugin-dir` from an empty directory, failing if any command doesn't resolve. Run it before every push.
+Runs the CLI unit tests (`node --test tests/*.test.mjs`), `claude plugin validate`, and a smoke test that every `/openidea:*` command resolves via `--plugin-dir` from an empty directory. Run it before every push.
 
 See `CONTRIBUTING.md` for the full contribution/versioning workflow.
 

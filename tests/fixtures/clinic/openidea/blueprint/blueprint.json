@@ -1,0 +1,31 @@
+{
+  "generated": "2026-11-24",
+  "actors": [
+    {"id": "patient", "name": "Patient", "description": "Books and reschedules appointments over WhatsApp.", "derived_from": ["wa-booking"]},
+    {"id": "receptionist", "name": "Receptionist", "description": "Confirms bookings and watches today's chairs.", "derived_from": ["wa-booking", "occupancy-dashboard"]},
+    {"id": "cashier", "name": "Cashier", "description": "Takes payments at the desk.", "derived_from": ["refund-by-cashier"]}
+  ],
+  "entities": [
+    {"id": "booking", "name": "Booking", "attributes": ["patient", "chair", "start", "status"], "lifecycle": {"create": "Patient books over WhatsApp", "update": "Receptionist confirms or reschedules", "archive": "After the visit", "delete": "TBD"}, "derived_from": ["wa-booking"]},
+    {"id": "payment", "name": "Payment", "attributes": ["booking", "amount", "method"], "lifecycle": {"create": "Cashier records payment", "update": "Refund", "archive": "End of fiscal year", "delete": "Never"}, "derived_from": ["refund-by-cashier"]},
+    {"id": "chair", "name": "Chair", "attributes": ["name"], "lifecycle": {"create": "Set up by the owner", "update": "Rename", "archive": "Out of service", "delete": "Never"}, "derived_from": [], "assumption": true}
+  ],
+  "permissions": [
+    {"actor": "patient", "action": "create", "entity": "booking", "allow": true, "derived_from": ["wa-booking"]},
+    {"actor": "receptionist", "action": "update", "entity": "booking", "allow": true, "derived_from": ["wa-booking"]},
+    {"actor": "cashier", "action": "refund", "entity": "payment", "allow": true, "derived_from": ["refund-by-cashier"]}
+  ],
+  "flows": [
+    {"id": "book-appointment", "name": "Book an appointment", "actor": "patient", "trigger": "Patient messages the clinic number", "steps": ["Pick a date", "Pick a free slot", "Confirm"], "scenarios": {"success": "Confirmation within a minute", "alternative": ["Slot taken while choosing: offer the next free one"], "failure": ["WhatsApp API down: message says we will call back"], "empty_state": "No free slots this week: offer next week"}, "derived_from": ["wa-booking"]},
+    {"id": "view-occupancy", "name": "See today's chairs", "actor": "receptionist", "trigger": "Opens the tablet app", "steps": ["Show chairs by hour"], "scenarios": {"success": "Every chair shows free or booked", "failure": [], "empty_state": "TBD"}, "derived_from": ["occupancy-dashboard"]}
+  ],
+  "screens": [
+    {"id": "occupancy-board", "name": "Occupancy board", "flows": ["view-occupancy"], "elements": ["chair rows", "hour columns", "booking chips"], "derived_from": ["occupancy-dashboard"]}
+  ],
+  "integrations": [
+    {"id": "whatsapp", "name": "WhatsApp Business API", "direction": "both", "data": "Booking messages and confirmations", "derived_from": ["wa-booking"]}
+  ],
+  "nfr": [
+    {"id": "tablet", "category": "compatibility", "requirement": "Runs on the receptionist's Android tablet browser", "derived_from": ["occupancy-dashboard"]}
+  ]
+}
