@@ -61,18 +61,19 @@ const TEMPLATE = String.raw`<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OpenIdea Dashboard</title>
 <style>
-:root{--bg:#fbfbfa;--surface:#fff;--sunk:#f3f4f2;--border:#e4e5e1;--text:#1b1d1a;--muted:#5d625a;--dim:#8b9087;--accent:#2f6b55;--accent-soft:#e4f0ea;--red:#b3261e;--red-soft:#fbe9e7;--amber:#8a5a00;--amber-soft:#fdf1d8;--green:#1f7a4c;--green-soft:#e3f4ea;--blue:#2457a6;--blue-soft:#e6eefb}
-@media (prefers-color-scheme:dark){:root{--bg:#121412;--surface:#191c19;--sunk:#202420;--border:#2c312c;--text:#e9ece7;--muted:#a7ada4;--dim:#737a70;--accent:#6fc3a0;--accent-soft:#1c2e26;--red:#ff8a80;--red-soft:#33191a;--amber:#f0c060;--amber-soft:#2e2615;--green:#6fd3a0;--green-soft:#17291f;--blue:#8db4f5;--blue-soft:#18233a}}
+:root{--bg:#fbfbfa;--surface:#fff;--sunk:#f3f4f2;--border:#e4e5e1;--text:#1b1d1a;--muted:#5d625a;--dim:#8b9087;--accent:#2f6b55;--accent-soft:#e4f0ea;--red:#b3261e;--red-soft:#fbe9e7;--amber:#8a5a00;--amber-soft:#fdf1d8;--green:#1f7a4c;--green-soft:#e3f4ea;--blue:#2457a6;--blue-soft:#e6eefb;--accent-line:rgba(47,107,85,.4);--shadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.07)}
+@media (prefers-color-scheme:dark){:root{--bg:#121412;--surface:#191c19;--sunk:#202420;--border:#2c312c;--text:#e9ece7;--muted:#a7ada4;--dim:#737a70;--accent:#6fc3a0;--accent-soft:#1c2e26;--red:#ff8a80;--red-soft:#33191a;--amber:#f0c060;--amber-soft:#2e2615;--green:#6fd3a0;--green-soft:#17291f;--blue:#8db4f5;--blue-soft:#18233a;--accent-line:rgba(111,195,160,.45);--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35)}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{margin:0;overflow-wrap:anywhere;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+a{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:var(--accent-line)}a:hover{text-decoration-color:currentColor}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--sunk);padding:1px 5px;border-radius:4px}
 header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--border)}
 .bar{max-width:1180px;margin:0 auto;padding:12px max(20px,env(safe-area-inset-right)) 12px max(20px,env(safe-area-inset-left));display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-.brand{font-weight:700}.brand small{color:var(--dim);font-weight:500;margin-left:6px}
+.brand{font-weight:700}.brand,.brand a{color:var(--text);text-decoration:none}.brand small{color:var(--dim);font-weight:500;margin-left:6px}
 nav{display:flex;gap:4px;flex-wrap:wrap}
-nav a{color:var(--muted);padding:6px 10px;border-radius:7px;font-size:14px}
+nav a{color:var(--muted);padding:6px 10px;border-radius:7px;font-size:14px;text-decoration:none}
 nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}nav a:hover{text-decoration:none;color:var(--text)}
 .mode{margin-left:auto;font-size:12px;padding:3px 9px;border-radius:99px;background:var(--sunk);color:var(--muted)}
 .mode.client{background:var(--blue-soft);color:var(--blue)}
@@ -81,12 +82,30 @@ h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}h2{font-size:17px;margin:
 .lede{color:var(--muted);margin:0 0 20px;max-width:760px}
 .grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+/* Anything you can open has data-href: hover lift, pointer, and a chevron. Plain cards never react. */
+[data-href]{cursor:pointer;position:relative;transition:border-color .12s,box-shadow .12s}
+.card[data-href]{padding-right:36px}
+.card[data-href]::after{content:'\203A';position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:24px;line-height:1;color:var(--dim)}
+.card[data-href]:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+.card[data-href]:hover::after{color:var(--accent)}
+.card[data-href] a{text-decoration:none}
+tbody tr[data-href]:hover td{background:var(--accent-soft)}
+tbody tr[data-href] td:first-child a{font-weight:600}
+.jump{display:inline-flex;align-items:center;gap:4px;font-size:13px;padding:4px 10px;border:1px solid var(--accent-line);border-radius:99px;background:var(--surface);color:var(--accent);text-decoration:none}
+.jump:hover{background:var(--accent-soft);border-color:var(--accent)}
+.jump.on{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+.src{font-size:12.5px;color:var(--muted)}
+.cmd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding:8px 10px;background:var(--sunk);border-radius:8px}
+.cmd .lbl{font-size:12px;color:var(--muted);width:100%}
+.cmd code{background:none;padding:0;flex:1;min-width:0}
+.btn{display:inline-flex;align-items:center;gap:6px;font-weight:600;background:var(--accent);color:var(--surface);border-color:var(--accent)}
+.btn:hover{filter:brightness(1.08);color:var(--surface);border-color:var(--accent)}
 .stat .v{font-size:28px;font-weight:700;letter-spacing:-.02em}.stat .k{color:var(--muted);font-size:13px}.stat .s{color:var(--dim);font-size:12px;margin-top:2px}
 .stat.bad .v{color:var(--red)}.stat.warn .v{color:var(--amber)}.stat.good .v{color:var(--green)}
 table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:14px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
 th{background:var(--sunk);color:var(--muted);font-weight:600;font-size:12.5px;white-space:nowrap}
-tr:last-child td{border-bottom:0}tbody tr:hover{background:var(--sunk)}
+tr:last-child td{border-bottom:0}
 .pill{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--sunk);color:var(--muted);white-space:nowrap}
 .p-high,.p-error,.p-killed,.p-blocked{background:var(--red-soft);color:var(--red)}
 .p-medium,.p-warning,.p-validating,.p-captured,.p-draft,.p-assumption{background:var(--amber-soft);color:var(--amber)}
@@ -95,7 +114,7 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:var(--sunk)}
 .p-promoted,.p-open{background:var(--blue-soft);color:var(--blue)}
 .p-accepted_risk{background:var(--amber-soft);color:var(--amber)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{font-size:12.5px;padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface)}
+.chip{font-size:12.5px;padding:2px 8px;border-radius:6px;background:var(--sunk);color:var(--muted)}
 .q{font-size:16px;font-weight:600;margin:4px 0 8px}
 .meta{color:var(--muted);font-size:13px}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
@@ -139,7 +158,10 @@ table,thead,tbody{display:block;width:100%}
 table{border:0;background:none}
 thead{display:none}
 tbody tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;padding:10px 12px}
-tbody tr:hover{background:var(--surface)}
+tbody tr[data-href]{padding-right:34px;position:relative}
+tbody tr[data-href]::after{content:'\203A';position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:24px;color:var(--dim)}
+tbody tr[data-href]:hover td{background:none}
+tbody tr[data-href]:hover{border-color:var(--accent);box-shadow:var(--shadow)}
 td{display:block;border:0;padding:0;width:100%;order:2;font-size:14px}
 td::before{content:attr(data-label) ": ";color:var(--muted);font-size:12.5px}
 td:not([data-label])::before,td[data-label=""]::before{content:none}
@@ -203,9 +225,16 @@ function ideaLink(id){return ideaById[id]?'<a href="#idea/'+encodeURIComponent(i
 function gapLink(id){return '<a href="#gap/'+encodeURIComponent(id)+'">'+esc(id)+'</a>';}
 function openGap(g){return g.data.status==='open'||g.data.status==='validating';}
 function bpEls(){var out=[];if(!D.blueprint)return out;Object.keys(D.kinds).forEach(function(k){(D.blueprint[k]||[]).forEach(function(el){out.push({kind:k,el:el});});});return out;}
-function copyBtn(text){return '<button data-copy="'+esc(text)+'">Copy '+esc(text)+'</button>';}
+function copyBtn(text){return '<div class="cmd"><span class="lbl">To resolve it, run in Claude Code:</span><code>'+esc(text)+'</code><button class="btn" data-copy="'+esc(text)+'">Copy</button></div>';}
+document.addEventListener('click',function(e){
+  if(e.target.closest('a,button,input,select,textarea,[data-copy]'))return;
+  var c=e.target.closest('[data-href]'); if(!c)return;
+  if(window.getSelection && String(window.getSelection()).length) return;
+  location.hash=c.getAttribute('data-href');
+});
+document.addEventListener('keydown',function(e){var c=e.target.closest&&e.target.closest('[data-href]');if(c&&e.target===c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();location.hash=c.getAttribute('data-href');}});
 document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var t=b.getAttribute('data-copy');
-  var done=function(){var o=b.textContent;b.textContent='Copied';setTimeout(function(){b.textContent=o;},1200);};
+  var done=function(){var o=b.textContent;b.textContent='Copied \u2713';setTimeout(function(){b.textContent=o;},1200);};
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){fallback(t);done();});}else{fallback(t);done();}});
 function fallback(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();}
 
@@ -220,11 +249,11 @@ function overview(){
   var depthPct = D.depth && D.depth.score!=null ? Math.round(D.depth.score*100) : null;
   var ready = (c.byStatus.ready||0), cap = (c.byStatus.captured||0);
   h += '<div class="grid g4">';
-  h += '<div class="card stat '+(c.openHigh?'bad':'good')+'"><div class="v">'+c.openHigh+'</div><div class="k">Open high-impact gaps</div><div class="s">'+((c.gapStatus.open||0)+(c.gapStatus.validating||0))+' open in total</div></div>';
-  h += '<div class="card stat"><div class="v">'+ready+' / '+(ready+cap)+'</div><div class="k">Ideas ready</div><div class="s">'+cap+' still captured</div></div>';
-  h += '<div class="card stat '+(depthPct==null?'':depthPct<70?'warn':'good')+'"><div class="v">'+(depthPct==null?'–':depthPct+'%')+'</div><div class="k">Blueprint depth</div><div class="s">'+(D.depth?D.depth.filled+'/'+D.depth.total+' mandatory slots':'No blueprint yet')+'</div>'+(depthPct==null?'':'<div class="depth"><span style="width:'+depthPct+'%"></span></div>')+'</div>';
-  h += '<div class="card stat '+(D.assumptions?'warn':'')+'"><div class="v">'+D.assumptions+'</div><div class="k">Hidden assumptions</div><div class="s">Blueprint elements with no source idea</div></div>';
-  if(!CLIENT) h += '<div class="card stat '+(c.errors?'bad':'good')+'"><div class="v">'+c.errors+'</div><div class="k">Check errors</div><div class="s">'+c.warnings+' warnings · <a href="#issues">see checks</a></div></div>';
+  h += '<div class="card stat '+(c.openHigh?'bad':'good')+'" data-href="queue" tabindex="0"><div class="v">'+c.openHigh+'</div><div class="k">Open high-impact gaps</div><div class="s">'+((c.gapStatus.open||0)+(c.gapStatus.validating||0))+' open in total</div></div>';
+  h += '<div class="card stat" data-href="ideas" tabindex="0"><div class="v">'+ready+' / '+(ready+cap)+'</div><div class="k">Ideas ready</div><div class="s">'+cap+' still captured</div></div>';
+  h += '<div class="card stat '+(depthPct==null?'':depthPct<70?'warn':'good')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+(depthPct==null?'–':depthPct+'%')+'</div><div class="k">Blueprint depth</div><div class="s">'+(D.depth?D.depth.filled+'/'+D.depth.total+' mandatory slots':'No blueprint yet')+'</div>'+(depthPct==null?'':'<div class="depth"><span style="width:'+depthPct+'%"></span></div>')+'</div>';
+  h += '<div class="card stat '+(D.assumptions?'warn':'')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+D.assumptions+'</div><div class="k">Hidden assumptions</div><div class="s">Blueprint elements with no source idea</div></div>';
+  if(!CLIENT) h += '<div class="card stat '+(c.errors?'bad':'good')+'" data-href="issues" tabindex="0"><div class="v">'+c.errors+'</div><div class="k">Check errors</div><div class="s">'+c.warnings+' warnings</div></div>';
   h += '</div>';
   var order=[['ready','var(--green)'],['captured','var(--amber)'],['parked','var(--dim)'],['promoted','var(--blue)'],['merged','var(--border)'],['split','var(--border)'],['killed','var(--red)']];
   var total = order.reduce(function(s,o){return s+(c.byStatus[o[0]]||0);},0);
@@ -248,10 +277,10 @@ function queueCards(ids){
   if(!ids.length) return '<p class="empty">No open gaps. Run /openidea:evaluate to look for blind spots.</p>';
   return '<div class="grid g2">'+ids.map(function(id,n){var g=gapById[id];if(!g)return '';var d=g.data;
     var body = CLIENT?'':sectionOf(g.body,'Proposed validation')||sectionOf(g.body,'Usulan validasi');
-    return '<div class="card"><div class="chips">'+pill('#'+(n+1),'low')+pill(d.impact)+pill(d.kind,'low')+pill(d.status)+'</div><div class="q">'+esc(d.question)+'</div>'+
+    return '<div class="card" data-href="gap/'+encodeURIComponent(id)+'" tabindex="0"><div class="chips">'+pill('#'+(n+1),'low')+pill(d.impact)+pill(d.kind,'low')+pill(d.status)+'</div><div class="q">'+esc(d.question)+'</div>'+
       (body?'<div class="md meta">'+md(body)+'</div>':'')+
-      '<div class="meta">Ideas: '+((d.ideas||[]).map(ideaLink).join(', ')||'project-wide')+'</div>'+
-      '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><a href="#gap/'+encodeURIComponent(id)+'">Details</a>'+(CLIENT?'':copyBtn('/openidea:resolve '+id))+'</div></div>';}).join('')+'</div>';
+      '<div class="meta">Ideas: '+((d.ideas||[]).map(function(x){return esc(x);}).join(', ')||'project-wide')+'</div>'+
+      (CLIENT?'':copyBtn('/openidea:resolve '+id))+'</div>';}).join('')+'</div>';
 }
 function sectionOf(body,title){var m=String(body||'').split(/^##\s+/m).filter(function(s){return s.toLowerCase().indexOf(title.toLowerCase())===0;})[0];return m?m.replace(/^[^\n]*\n/,'').trim():'';}
 function queue(){
@@ -274,7 +303,7 @@ function gap(id){
   var d = g.data;
   var h = '<p class="back"><a href="#queue">← Decision queue</a></p><h1>'+esc(d.id)+'</h1><div class="chips">'+pill(d.impact)+pill(d.kind,'low')+pill('confidence '+d.confidence,'low')+pill(d.status)+(d.found_by?pill('found by '+d.found_by,'low'):'')+'</div>';
   h += '<div class="q" style="margin-top:12px">'+esc(d.question)+'</div>';
-  if(!CLIENT) h += '<p>'+copyBtn('/openidea:resolve '+d.id)+'</p>';
+  if(!CLIENT) h += copyBtn('/openidea:resolve '+d.id);
   h += '<p class="meta">Ideas: '+((d.ideas||[]).map(ideaLink).join(', ')||'project-wide')+(d.sources&&d.sources.length?' · Sources: '+d.sources.map(function(s){return '<code>'+esc(s)+'</code>';}).join(' '):'')+'</p>';
   if(d.resolution) h += '<div class="card"><strong>Resolution:</strong> '+inline(d.resolution)+'</div>';
   if(g.body && g.body.trim()) h += '<div class="card md" style="margin-top:12px">'+md(g.body)+'</div>';
@@ -310,7 +339,7 @@ function idea(id){
   var gs = D.gaps.filter(function(g){return (g.data.ideas||[]).indexOf(d.id)>=0;});
   h += '<h3>Gaps</h3>'+(gs.length?gs.map(function(g){return '<div class="issue">'+pill(g.data.impact)+' '+pill(g.data.status)+' '+gapLink(g.data.id)+'<div>'+esc(g.data.question)+'</div></div>';}).join(''):'<p class="empty">No gaps linked.</p>');
   var els = bpEls().filter(function(x){return (x.el.derived_from||[]).indexOf(d.id)>=0;});
-  h += '<h3>Blueprint derived from this idea</h3>'+(els.length?'<div class="chips">'+els.map(function(x){return '<a class="chip" href="#blueprint/'+x.kind+'/'+encodeURIComponent(x.el.id)+'">'+esc(D.kinds[x.kind].label)+': '+esc(x.el.name||x.el.id)+'</a>';}).join('')+'</div>':'<p class="empty">Nothing yet. Either the blueprint is stale or this idea is too vague to build.</p>');
+  h += '<h3>Blueprint derived from this idea</h3>'+(els.length?'<div class="chips">'+els.map(function(x){return '<a class="jump" href="#blueprint/'+x.kind+'/'+encodeURIComponent(x.el.id)+'">'+esc(D.kinds[x.kind].label)+': '+esc(x.el.name||x.el.id)+'</a>';}).join('')+'</div>':'<p class="empty">Nothing yet. Either the blueprint is stale or this idea is too vague to build.</p>');
   if(d.history&&d.history.length) h += '<h3>History</h3><table><tbody>'+d.history.map(function(e){return '<tr><td>'+esc(e.date)+'</td><td>'+pill(e.status)+'</td><td class="meta">'+esc(e.note||e.reason||'')+'</td></tr>';}).join('')+'</tbody></table>';
   return h+'</div></div>';
 }
@@ -319,7 +348,7 @@ function blueprint(focusKind, focusId){
   var h = '<h1>Blueprint</h1>';
   if(!D.blueprint) return h+'<p class="empty">No blueprint yet. Run /openidea:blueprint to derive one from the ideas.</p>';
   h += '<p class="lede">Derived from the ideas, never edited by hand. Every element shows the ideas it comes from; red slots are mandatory details nobody has defined yet.'+(D.blueprint.generated?' Generated '+esc(D.blueprint.generated)+'.':'')+'</p>';
-  h += '<div class="toc">'+Object.keys(D.kinds).map(function(k){var n=(D.blueprint[k]||[]).length;return n?'<a class="chip" href="#blueprint/'+k+'">'+esc(D.kinds[k].plural)+' · '+n+'</a>':'';}).join('')+((D.blueprint.permissions||[]).length?'<a class="chip" href="#blueprint/permissions">Permission matrix</a>':'')+'</div>';
+  h += '<div class="toc"><a class="jump'+(!focusKind?' on':'')+'" href="#blueprint">All</a>'+Object.keys(D.kinds).map(function(k){var n=(D.blueprint[k]||[]).length;return n?'<a class="jump'+(focusKind===k?' on':'')+'" href="#blueprint/'+k+'">'+esc(D.kinds[k].plural)+' · '+n+'</a>':'';}).join('')+((D.blueprint.permissions||[]).length?'<a class="jump'+(focusKind==='permissions'?' on':'')+'" href="#blueprint/permissions">Permission matrix</a>':'')+'</div>';
   if(!focusKind || focusKind==='permissions') h += matrix();
   Object.keys(D.kinds).forEach(function(k){
     if(focusKind && focusKind!=='permissions' && focusKind!==k) return;
@@ -329,7 +358,7 @@ function blueprint(focusKind, focusId){
       if(focusId && el.id!==focusId) return;
       var slots = D.kinds[k].slots;
       h += '<div class="card el"><h3>'+esc(el.name||el.id)+' <code>'+esc(el.id)+'</code>'+(el.assumption?pill('assumption'):'')+'</h3>';
-      h += '<div class="chips" style="margin:4px 0 8px">'+((el.derived_from||[]).length?(el.derived_from||[]).map(function(id){return '<span class="chip">from '+ideaLink(id)+'</span>';}).join(''):'<span class="pill p-assumption">no source idea</span>')+'</div>';
+      h += '<div class="chips" style="margin:4px 0 8px">'+((el.derived_from||[]).length?'<span class="src">From idea: '+(el.derived_from||[]).map(ideaLink).join(', ')+'</span>':'<span class="pill p-assumption">no source idea</span>')+'</div>';
       slots.filter(function(s){return s!=='name';}).forEach(function(s){var v=get(el,s);h+='<div class="slot"><span class="k">'+esc(s)+'</span>'+(filled(v)?'<span>'+fmt(v)+'</span>':'<span class="miss">Not defined</span>')+'</div>';});
       Object.keys(el).forEach(function(key){if(['id','name','derived_from','assumption'].indexOf(key)>=0)return;if(slots.some(function(s){return s===key||s.indexOf(key+'.')===0;}))return;h+='<div class="slot"><span class="k">'+esc(key)+'</span><span>'+fmt(el[key])+'</span></div>';});
       h += '</div>';
@@ -370,7 +399,10 @@ function issues(){
 function labelCells(root){
   root.querySelectorAll('table').forEach(function(t){
     var heads = [].map.call(t.querySelectorAll('thead th'), function(th){return th.textContent.trim();});
-    t.querySelectorAll('tbody tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){
+    t.querySelectorAll('tbody tr').forEach(function(tr){
+      var first=tr.children[0]&&tr.children[0].querySelector('a[href^="#"]');
+      if(first&&!tr.hasAttribute('data-href')){tr.setAttribute('data-href',first.getAttribute('href').slice(1));}
+      [].forEach.call(tr.children,function(td,i){
       if(heads[i]!==undefined)td.setAttribute('data-label',heads[i]);
       var txt=td.textContent.trim();
       if(txt===''||txt==='\u00b7') td.classList.add('emptycell');
@@ -396,7 +428,7 @@ function diagramBlock(title, src, sub){
 function diagrams(focus){
   var h = '<h1>Diagrams</h1><p class="lede">Generated from the blueprint by code, never drawn by hand. Red nodes are steps, branches, or states nobody has defined yet: each is a blind spot to resolve.</p>';
   if(!D.diagrams) return h+'<p class="empty">No blueprint yet. Run /openidea:blueprint.</p>';
-  h += '<div class="toc"><a class="chip" href="#diagrams">All</a><a class="chip" href="#diagrams/context">System context</a>'+D.diagrams.activity.map(function(a){return '<a class="chip" href="#diagrams/'+encodeURIComponent(a.id)+'">'+esc(a.name)+'</a>';}).join('')+D.diagrams.states.map(function(a){return '<a class="chip" href="#diagrams/state-'+encodeURIComponent(a.id)+'">'+esc(a.name)+' states</a>';}).join('')+'</div>';
+  h += '<div class="toc"><a class="jump'+(!focus?' on':'')+'" href="#diagrams">All</a><a class="jump'+(focus==='context'?' on':'')+'" href="#diagrams/context">System context</a>'+D.diagrams.activity.map(function(a){return '<a class="jump'+(focus===a.id?' on':'')+'" href="#diagrams/'+encodeURIComponent(a.id)+'">'+esc(a.name)+'</a>';}).join('')+D.diagrams.states.map(function(a){return '<a class="jump'+(focus==='state-'+a.id?' on':'')+'" href="#diagrams/state-'+encodeURIComponent(a.id)+'">'+esc(a.name)+' states</a>';}).join('')+'</div>';
   if(!focus || focus==='context') h += '<h2>System context</h2>'+diagramBlock('Who and what the system talks to', D.diagrams.context, 'Actors on the left, external systems with the direction of data. Container architecture is a design decision and belongs in the OpenSpec design, not here.');
   var acts = D.diagrams.activity.filter(function(a){return !focus||focus===a.id;});
   if(acts.length) h += '<h2>Activity per flow</h2>'+acts.map(function(a){return diagramBlock(a.name, a.src);}).join('');
