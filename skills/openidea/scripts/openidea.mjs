@@ -14,6 +14,7 @@ import { renderPrototype } from './lib/prototype.mjs';
 import { renderReportMd } from './lib/report.mjs';
 import { renderReportPdf } from './lib/pdf.mjs';
 import { renderReportPptx } from './lib/pptx.mjs';
+import { LANGS } from './lib/i18n.mjs';
 
 const HELP = `openidea <command> [options]
 
@@ -32,7 +33,8 @@ Commands:
                the team (undefined behaviour in red, feedback copies back as a gap).
   report       Write the finished, client-safe report (features, phases and timeline, open
                questions, assumptions, next steps) to openidea/reports/report.<format>.
-               --format md | pptx | pdf (default md).
+               --format md | pptx | pdf (default md); --lang en | id (default: BRIEF's
+               language, else en).
   dashboard    Write a self-contained HTML dashboard (default openidea/dashboard/index.html).
 
 Options:
@@ -42,13 +44,14 @@ Options:
                  default output openidea/dashboard/client.html
   --out <file>   dashboard, report: output path
   --format <f>   report: md, pptx or pdf
+  --lang <l>     prototype, report, dashboard: en or id (default: BRIEF's language, else en)
 `;
 
 function parseArgs(argv) {
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === '--root' || a === '--out' || a === '--format') args[a.slice(2)] = argv[++i];
+    if (a === '--root' || a === '--out' || a === '--format' || a === '--lang') args[a.slice(2)] = argv[++i];
     else if (a.startsWith('--')) args[a.slice(2)] = true;
     else args._.push(a);
   }
@@ -74,6 +77,10 @@ export function main(argv) {
   const args = parseArgs(argv);
   const cmd = args._[0];
   if (!cmd || args.help || cmd === 'help') { console.log(HELP); return 0; }
+  if (args.lang) {
+    args.lang = String(args.lang).toLowerCase();
+    if (!LANGS[args.lang]) { console.error(`Unknown language "${args.lang}". Use ${Object.keys(LANGS).join(' or ')}.`); return 2; }
+  }
   const root = resolve(args.root || '.');
   const project = loadProject(root);
   const issues = validateProject(project);
@@ -111,8 +118,8 @@ export function main(argv) {
     if (!project.blueprint) { console.error('No openidea/blueprint/blueprint.json yet. Run /openidea:blueprint first.'); return 1; }
     const name = project.brief?.body?.match(/^#\s+(.+)$/m)?.[1];
     const user = join(project.dir, 'prototype', 'index.html'), review = join(project.dir, 'prototype', 'review.html');
-    write(user, renderPrototype(project, name, { mode: 'user' }));
-    write(review, renderPrototype(project, name, { mode: 'review' }));
+    write(user, renderPrototype(project, name, { mode: 'user', lang: args.lang }));
+    write(review, renderPrototype(project, name, { mode: 'review', lang: args.lang }));
     console.log(`Wrote ${user} (for real users: no meta) and ${review} (for the team: undefined behaviour in red).`);
     return 0;
   }
@@ -122,14 +129,14 @@ export function main(argv) {
     const render = { md: renderReportMd, pptx: renderReportPptx, pdf: renderReportPdf }[format];
     if (!render) { console.error(`Unknown format "${format}". Use md, pptx or pdf.`); return 2; }
     const path = resolve(args.out || join(project.dir, 'reports', `report.${format}`));
-    write(path, render(project));
+    write(path, render(project, { lang: args.lang }));
     console.log(`Wrote ${path}.`);
     return 0;
   }
   if (cmd === 'dashboard') {
     const mode = args.client ? 'client' : 'internal';
     const path = resolve(args.out || join(project.dir, 'dashboard', mode === 'client' ? 'client.html' : 'index.html'));
-    write(path, renderDashboard(project, issues, { mode }));
+    write(path, renderDashboard(project, issues, { mode, lang: args.lang }));
     console.log(`Wrote ${path} (${mode} view). Open it in a browser.`);
     return 0;
   }

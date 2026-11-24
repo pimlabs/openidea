@@ -54,7 +54,7 @@ const C = {
   navy: '#14213d', text: '#1a1c20', muted: '#5b606b', dim: '#8a8f99', accent: '#2558c9', soft: '#eaf0fd', line: '#e2e4e8', tile: '#f4f6fa',
   amber: '#9a6200', amberSoft: '#fdf3dc', red: '#b42318', redSoft: '#fde8e6', green: '#1a7f4b', greenSoft: '#e3f4ea', white: '#ffffff', grey: '#5b606b',
 };
-const IMPACT_C = { High: [C.redSoft, C.red], Medium: [C.amberSoft, C.amber], Low: [C.greenSoft, C.green] };
+const IMPACT_C = { high: [C.redSoft, C.red], medium: [C.amberSoft, C.amber], low: [C.greenSoft, C.green] };
 
 class Doc {
   constructor(title, footer) { this.title = title; this.footer = footer || title; this.noFooter = new Set(); this.pages = []; this.PW = 595.28; this.PH = 841.89; this.M = 56; this.newPage(); }
@@ -148,9 +148,9 @@ class Doc {
   }
 }
 
-export function renderReportPdf(p) {
-  const m = reportModel(p);
-  const d = new Doc(m.title, `${m.title}  ·  ${m.subtitle}  ·  Draft for discussion`);
+export function renderReportPdf(p, opts = {}) {
+  const m = reportModel(p, opts), L = m.L;
+  const d = new Doc(m.title, `${m.title}  ·  ${m.subtitle}  ·  ${L.draft}`);
   const M = d.M, CW = d.CW;
 
   // Cover: title band, the one-line conclusion, three numbers, the key messages
@@ -159,27 +159,27 @@ export function renderReportPdf(p) {
   d.textSp(M, d.PH - 80, m.subtitle.toUpperCase(), 'F2', 8.5, '#9fb6ea', 1.4);
   let ty = d.PH - 118;
   for (const l of wrap(m.title, 'F2', 30, CW)) { d.text(M, ty, l, 'F2', 30, C.white); ty -= 36; }
-  d.text(M, ty - 4, [m.date ? fmtDate(m.date) : '', 'Draft for discussion'].filter(Boolean).join('  ·  '), 'F1', 10.5, '#c9d4ee');
+  d.text(M, ty - 4, [m.date ? fmtDate(m.date) : '', L.draft].filter(Boolean).join('  ·  '), 'F1', 10.5, '#c9d4ee');
   d.y = d.PH - 310;
-  d.textSp(M, d.y, 'EXECUTIVE SUMMARY', 'F2', 8, C.accent, 1.2);
+  d.textSp(M, d.y, L.execSummary.toUpperCase(), 'F2', 8, C.accent, 1.2);
   d.y -= 10;
   d.para(m.headline + '.', { font: 'F2', size: 15, color: C.navy, gap: 18 });
 
-  const kpis = [[String(m.features.length), m.phases.length ? `features in ${m.phases.length} phase${m.phases.length === 1 ? '' : 's'}` : 'features']];
-  if (m.timeline) kpis.push([`${m.timeline.likely} wk`, `likely, range ${range(m.timeline.low, m.timeline.high)} weeks`]);
-  kpis.push([String(m.questions.length), m.questions.length === 1 ? 'decision needed from you' : 'decisions needed from you']);
+  const kpis = [[String(m.features.length), m.phases.length ? `${L.featuresWordLower(m.features.length)} ${L.featuresInPhases(m.phases.length)}` : L.featuresWordLower(m.features.length)]];
+  if (m.timeline) kpis.push([`${L.num(m.timeline.likely)} ${L.wk}`, `${L.likely.toLowerCase()}, ${L.rangeWeeks(range(m.timeline.low, m.timeline.high))}`]);
+  kpis.push([String(m.questions.length), L.decisionsFromYou(m.questions.length)]);
   const gap = 12, kw = (CW - gap * (kpis.length - 1)) / kpis.length, kh = 70;
   kpis.forEach(([v, l], i) => {
     const x = M + i * (kw + gap), warn = i === kpis.length - 1 && m.questions.length;
     d.rrect(x, d.y - kh, kw, kh, 6, warn ? C.amberSoft : C.tile);
     d.text(x + 14, d.y - 34, v, 'F2', 24, warn ? C.amber : C.accent);
-    d.text(x + 14, d.y - 54, l, 'F1', 9, C.muted);
+    d.block(x + 14, d.y - 45, l, kw - 28, { size: 8.5, color: C.muted, lh: 1.3 });
   });
   d.y -= kh + 24;
   for (const msg of m.messages) {
-    const h = Math.max(d.blockH(msg.text, CW - 130, { size: 10.5 }), 14);
+    const h = Math.max(d.blockH(msg.text, CW - 130, { size: 10.5 }), d.blockH(msg.title, 115, { font: 'F2', size: 10 }), 14);
     d.ensure(h + 14);
-    d.text(M, d.y - 10.5, msg.title, 'F2', 10, C.navy);
+    d.block(M, d.y, msg.title, 115, { font: 'F2', size: 10, color: C.navy });
     d.block(M + 130, d.y, msg.text, CW - 130, { size: 10.5 });
     d.y -= h + 8;
     d.line(M, d.y, M + CW, d.y);
@@ -188,36 +188,40 @@ export function renderReportPdf(p) {
 
   // Decisions: one card each, impact first
   if (m.questions.length) {
-    d.section('What we need from you', m.questionsHeadline, { page: true });
+    d.section(L.needFromYou, m.questionsHeadline, { page: true });
     m.questions.forEach((q, i) => {
       const meta = [];
-      if (q.features.length) meta.push(['Affects', q.features.join(', ')]);
-      if (q.days) meta.push(['Could add', `up to ${q.days} days`]);
-      if (q.blocks) meta.push(['Blocks', `${q.blocks} cannot start until this is answered`]);
+      if (q.features.length) meta.push([L.affects, q.features.join(', ')]);
+      if (q.days) meta.push([L.couldAdd, L.upToDays(q.days)]);
+      if (q.blocks) meta.push([L.blocks, L.cannotStart(q.blocks)]);
       const tw = CW - 64, qh = d.blockH(q.question, tw, { font: 'F2', size: 11.5, lh: 1.35 });
       const mh = meta.reduce((s, [, v]) => s + d.blockH(v, tw - 70, { size: 9.5 }) + 3, 0);
       const h = 18 + 16 + qh + 10 + mh + 12;
       d.ensure(h + 10);
-      const [bg, fg] = IMPACT_C[q.impact] || [C.tile, C.muted];
+      const [bg, fg] = IMPACT_C[q.level] || [C.tile, C.muted];
       d.rrect(M, d.y - h, CW, h, 6, C.tile);
       d.rect(M, d.y - h, 3, h, fg);
       d.circle(M + 26, d.y - 26, 11, C.accent);
       const n = String(i + 1); d.text(M + 26 - width(n, 'F2', 11) / 2, d.y - 30, n, 'F2', 11, C.white);
       let y = d.y - 18;
-      d.chip(M + 48, y - 8, `${q.impact.toUpperCase()} IMPACT`, bg, fg, 7);
+      d.chip(M + 48, y - 8, L.impactSuffix(q.impact).toUpperCase(), bg, fg, 7);
       y -= 16;
       y -= d.block(M + 48, y, q.question, tw, { font: 'F2', size: 11.5, color: C.navy, lh: 1.35 }) + 10;
       for (const [k, v] of meta) { d.text(M + 48, y - 9.5, k, 'F2', 8.5, C.muted); y -= d.block(M + 118, y, v, tw - 70, { size: 9.5 }) + 3; }
       d.y -= h + 10;
     });
+    if (m.moreQuestions.length) {
+      d.sub(`${L.alsoOpen}: ${L.alsoOpenTitle(m.moreQuestions.length)}`);
+      d.table([L.question, L.impactCol, L.affects], m.moreQuestions.map((q) => [q.question, q.impact, q.features.join(', ') || L.wholeProject]), [0.6, 0.1, 0.3], { bold: [] });
+    }
   }
 
   // Plan: Gantt on the likely schedule, then the whole-project range
   if (m.phases.length) {
-    d.section('Plan and timeline', m.timelineHeadline, { need: m.phases.length * 40 + 140 });
+    d.section(L.planTimeline, m.timelineHeadline, { need: m.phases.length * 40 + 140 });
     const max = Math.max(m.timeline?.high || 1, 1), labelW = 150, trackX = M + labelW, trackW = CW - labelW - 64;
     const step = max <= 8 ? 1 : max <= 16 ? 2 : max <= 32 ? 4 : 8, rowH = 40, top = d.y - 14;
-    d.text(trackX - 34, top + 2, 'Week', 'F1', 8, C.dim);
+    d.text(trackX - 34, top + 2, L.week, 'F1', 8, C.dim);
     for (let w = 0; w <= max; w += step) {
       const x = trackX + (w / max) * trackW;
       d.line(x, top - 6, x, top - 10 - m.phases.length * rowH, C.line, 0.5);
@@ -227,53 +231,53 @@ export function renderReportPdf(p) {
       const y = top - 12 - i * rowH;
       d.text(M, y - 12, `${ph.n}`, 'F2', 11, C.accent);
       d.text(M + 14, y - 12, ph.name, 'F2', 11, C.navy);
-      d.text(M + 14, y - 25, `${ph.features.length} feature${ph.features.length === 1 ? '' : 's'}  ·  range ${range(ph.weeks[0], ph.weeks[1])} wk`, 'F1', 8.5, C.muted);
+      d.text(M + 14, y - 25, L.featureCount(ph.features.length, range(ph.weeks[0], ph.weeks[1])), 'F1', 8.5, C.muted);
       const x = trackX + (ph.startLikely / max) * trackW, w = Math.max((ph.likely / max) * trackW, 2);
       d.rrect(x, y - 24, w, 18, 4, C.accent);
       const lbl = weeks(ph.likely);
       if (width(lbl, 'F2', 8.5) + 10 < w) d.text(x + 6, y - 18, lbl, 'F2', 8.5, C.white); else d.text(x + w + 5, y - 18, lbl, 'F2', 8.5, C.accent);
-      const end = ph.endDateLikely ? `~${fmtDate(ph.endDateLikely)}` : `wk ${ph.startLikely + ph.likely}`;
+      const end = ph.endDateLikely ? `~${fmtDate(ph.endDateLikely)}` : L.weekN(ph.startLikely + ph.likely);
       d.text(M + CW - width(end, 'F2', 9), y - 18, end, 'F2', 9, C.muted);
-      if (ph.blockers.length) d.chip(x, y - 37, 'WAITING ON A DECISION', C.redSoft, C.red, 6.5);
+      if (ph.blockers.length) d.chip(x, y - 37, L.waitingOnDecision.toUpperCase(), C.redSoft, C.red, 6.5);
     });
     d.y = top - 18 - m.phases.length * rowH;
     if (m.timeline) {
       const t = m.timeline, h = 66;
       d.y -= 8;
       d.rrect(M, d.y - h, CW, h, 6, C.tile);
-      d.text(M + 12, d.y - 26, 'Whole project', 'F2', 11, C.navy);
-      d.block(M + 12, d.y - 32, `team of ${t.people}${t.endDate ? `, ready ${fmtDate(t.endDate[0], { year: false })} to ${fmtDate(t.endDate[1])}` : ''}`, labelW - 20, { size: 8.5, color: C.muted });
+      d.text(M + 12, d.y - 26, L.wholeProject, 'F2', 11, C.navy);
+      d.block(M + 12, d.y - 32, `${L.teamOf(t.people)}${t.endDate ? `, ${L.readyBetween(fmtDate(t.endDate[0], { year: false }), fmtDate(t.endDate[1]))}` : ''}`, labelW - 20, { size: 8.5, color: C.muted });
       const lo = trackX + (t.low / max) * trackW, hi = trackX + (t.high / max) * trackW, li = trackX + (t.likely / max) * trackW, yb = d.y - 38;
       d.rrect(lo, yb, hi - lo, 8, 4, C.amberSoft, C.amber);
       d.circle(li, yb + 4, 6, C.accent);
-      const lt = `likely ${t.likely} wk`; d.text(li - width(lt, 'F2', 8.5) / 2, yb + 14, lt, 'F2', 8.5, C.accent);
-      d.text(lo - width(`${t.low} wk`, 'F1', 8) / 2, yb - 13, `${t.low} wk`, 'F1', 8, C.muted);
-      d.text(hi - width(`${t.high} wk`, 'F1', 8) / 2, yb - 13, `${t.high} wk`, 'F1', 8, C.muted);
+      const lt = L.likelyWk(t.likely); d.text(li - width(lt, 'F2', 8.5) / 2, yb + 14, lt, 'F2', 8.5, C.accent);
+      d.text(lo - width(`${L.num(t.low)} ${L.wk}`, 'F1', 8) / 2, yb - 13, `${L.num(t.low)} ${L.wk}`, 'F1', 8, C.muted);
+      d.text(hi - width(`${L.num(t.high)} ${L.wk}`, 'F1', 8) / 2, yb - 13, `${L.num(t.high)} ${L.wk}`, 'F1', 8, C.muted);
       d.y -= h + 14;
     }
-    d.para('Bars show the likely schedule. The range is wide on purpose: its upper end prices in every detail not yet decided, and it narrows as each decision is made.', { size: 9, color: C.muted });
+    d.para(L.barsNote, { size: 9, color: C.muted });
   }
 
   // Scope: what each phase delivers and how we will know it is done
-  d.section('Scope and definition of done', m.featuresHeadline, { page: true });
-  const groups = m.phases.length ? m.phases.map((ph) => [`${ph.n}. ${ph.name}`, `likely ${weeks(ph.likely)}`, ph.features]) : [['Features', '', m.features]];
-  if (m.later.length) groups.push(['Later', 'not planned yet', m.later]);
+  d.section(L.scopeDone, m.featuresHeadline, { page: true });
+  const groups = m.phases.length ? m.phases.map((ph) => [`${ph.n}. ${ph.name}`, L.likelyWeeks(ph.likely), ph.features]) : [[L.featuresWord, '', m.features]];
+  if (m.later.length) groups.push([L.later, L.notPlanned, m.later]);
   for (const [name, sub, fs] of groups) {
     if (!fs.length) continue;
     d.ensure(90); d.y -= 4;
     d.text(M, d.y - 11, name, 'F2', 11.5, C.navy);
     if (sub) d.text(M + width(name, 'F2', 11.5) + 10, d.y - 11, sub, 'F1', 9, C.muted);
     d.y -= 14;
-    d.table(['Feature', 'Used by', 'Done when'], fs.map((f) => [f.name, f.who, f.done || 'To be defined']), [0.28, 0.17, 0.55]);
+    d.table([L.feature, L.usedBy, L.doneWhen], fs.map((f) => [f.name, f.who, f.done || L.toBeDefined]), [0.28, 0.17, 0.55]);
   }
 
   // Boundaries
   if (m.nonGoals.length || m.constraints.length || m.assumptions.length) {
-    const cols = [['Not included', m.nonGoals, C.tile, C.muted], ['Constraints', m.constraints, C.tile, C.muted], ['Assumed, please confirm', m.assumptions, C.amberSoft, C.amber]].filter((c) => c[1].length);
+    const cols = [[L.notIncluded, m.nonGoals, C.tile, C.muted], [L.constraints, m.constraints, C.tile, C.muted], [L.assumedShort, m.assumptions, C.amberSoft, C.amber]].filter((c) => c[1].length);
     const g = 10, w = (CW - g * (cols.length - 1)) / cols.length;
     const hs = cols.map(([, items]) => items.reduce((s, it) => s + d.blockH(it, w - 36, { size: 9.5 }) + 5, 0));
     const h = 40 + Math.max(...hs) + 8;
-    d.section('Boundaries', 'What is out of scope, what limits the design, and what we assumed', { need: h });
+    d.section(L.boundaries, L.boundariesTitle, { need: h });
     cols.forEach(([k, items, bg, fg], i) => {
       const x = M + i * (w + g);
       d.rrect(x, d.y - h, w, h, 6, bg);
@@ -286,14 +290,14 @@ export function renderReportPdf(p) {
 
   // Next steps
   const nextH = (n) => Math.max(8 + d.blockH(n.what, CW - 120, { font: 'F2', size: 11 }) + 4 + d.blockH(n.detail, CW - 120, { size: 9.5 }), 34) + 14;
-  d.section('Next steps', m.nextHeadline, { need: m.next.reduce((s, n) => s + nextH(n), 0) });
+  d.section(L.nextSteps, m.nextHeadline, { need: m.next.reduce((s, n) => s + nextH(n), 0) });
   m.next.forEach((n, i) => {
     const tw = CW - 120, h = nextH(n);
     d.ensure(h);
     const you = n.who === 'You';
     d.circle(M + 12, d.y - 19, 11, you ? C.accent : C.grey);
     const s = String(i + 1); d.text(M + 12 - width(s, 'F2', 11) / 2, d.y - 23, s, 'F2', 11, C.white);
-    d.chip(M + 34, d.y - 22, you ? 'YOUR TEAM' : 'OUR TEAM', you ? C.soft : C.tile, you ? C.accent : C.muted, 7);
+    d.chip(M + 34, d.y - 22, (you ? L.yourTeam : L.ourTeam).toUpperCase(), you ? C.soft : C.tile, you ? C.accent : C.muted, 7);
     let y = d.y - 8;
     y -= d.block(M + 120, y, n.what, tw, { font: 'F2', size: 11, color: C.navy }) + 4;
     d.block(M + 120, y, n.detail, tw, { size: 9.5, color: C.muted });

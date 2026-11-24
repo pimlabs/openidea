@@ -10,6 +10,8 @@ Input from the user (free-form story, or a path/content of a meeting-notes/trans
 
 `openidea/BRIEF.md` must exist. If not, stop and point the user to `/openidea:init` first.
 
+Write every piece of prose in the project language (`language:` in `openidea/BRIEF.md`, default `en`); keep ids, frontmatter keys, enum values and section headings as the schema defines them (skill section 6, Language).
+
 ## Process
 
 1. **Detect input mode** — auto-detect from the kind of input:

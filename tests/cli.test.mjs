@@ -187,7 +187,7 @@ test('report: same content in md, pptx and pdf, client-safe, reproducible', asyn
   assert.equal(m.features.length, 2);
   assert.equal(m.questions[0].impact, 'High');
   assert.match(m.headline, /^2 features in 1 phase, likely ready by /); // action title computed from the data
-  assert.match(m.featuresHeadline, /1 has a clear definition of done, 1 still needs one/);
+  assert.match(m.featuresHeadline, /each has a clear definition of done/);
   assert.ok(m.timeline.likely >= m.timeline.low && m.timeline.likely <= m.timeline.high);
   const md = renderReportMd(p);
   for (const banned of ['discovery/', 'gaps/', '/openidea:', 'refund-permission', 'derived_from']) assert.ok(!md.includes(banned), `report must not contain ${banned}`);
@@ -199,4 +199,71 @@ test('report: same content in md, pptx and pdf, client-safe, reproducible', asyn
   assert.equal(pptx.readUInt32LE(0), 0x04034b50);
   assert.ok(pptx.includes(Buffer.from('ppt/slides/slide1.xml')));
   assert.ok(pptx.equals(renderReportPptx(loadProject(FIXTURE))));
+});
+
+test('report: at most 5 decisions per round, the rest listed; Indonesian on request', async () => {
+  const { reportModel, renderReportMd } = await import('../skills/openidea/scripts/lib/report.mjs');
+  const dir = copyFixture();
+  for (let i = 0; i < 5; i++) writeFileSync(join(dir, 'openidea', 'gaps', `extra-${i}.md`), `---\nid: extra-${i}\nkind: decision\nfound_by: manual\nquestion: Extra question ${i}?\nideas: [wa-booking]\nsources: []\nimpact: low\nconfidence: low\nstatus: open\nresolution: null\nhistory:\n  - {date: 2026-11-24, status: open}\n---\n\n## Finding\nx\n`);
+  const p = loadProject(dir);
+  const m = reportModel(p);
+  assert.equal(m.questions.length, 5);
+  assert.equal(m.questions.length + m.moreQuestions.length, 7);
+  assert.equal(m.questions[0].level, 'high'); // highest impact first
+  const id = renderReportMd(p, { lang: 'id' });
+  assert.match(id, /## Ringkasan eksekutif/);
+  assert.match(id, /Yang kami perlukan dari Anda/);
+  assert.ok(!/Executive summary/.test(id));
+  assert.match(renderReportMd(p), /## Executive summary/); // the model does not leak the last language
+});
+
+test('estimate: business rules cost time; a list with an undefined item is not filled', async () => {
+  const { estimate } = await import('../skills/openidea/scripts/lib/estimate.mjs');
+  const { isFilled } = await import('../skills/openidea/scripts/lib/validate.mjs');
+  assert.equal(isFilled(['Phone offline: TBD']), false);
+  assert.equal(isFilled(['Retry once']), true);
+  const dir = copyFixture();
+  const before = estimate(loadProject(dir)).total.low;
+  edit(dir, 'blueprint/blueprint.json', (s) => { const bp = JSON.parse(s); bp.entities[0].rules = ['No double booking', 'Cancel up to 2 hours before', 'Rescheduling limit (TBD)']; return JSON.stringify(bp); });
+  const after = estimate(loadProject(dir));
+  assert.ok(after.total.low >= before + 1.5);
+  assert.ok(after.phases[0].items.some((it) => it.reasons.some((r) => /1 rule not defined/.test(r))));
+});
+
+test('dashboard overview tells the story in order: product, users, what it does, delivery, clarity, decisions', () => {
+  const html = renderDashboard(loadProject(FIXTURE), [], { mode: 'client' });
+  // Sections are rendered client-side; check their order in the template.
+  const tpl = ['h_users', 'h_what', 'h_plan', 'h_health', 'h_decide'].map((k) => html.indexOf(`</span>'+t('${k}')+'<`));
+  assert.ok(tpl.every((x) => x > 0));
+  assert.deepEqual([...tpl].sort((a, b) => a - b), tpl);
+});
+
+test('every string the dashboard and prototype show exists in every language', async () => {
+  const { DASH, PROTO } = await import('../skills/openidea/scripts/lib/i18n.mjs');
+  const src = (f) => readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'skills/openidea/scripts/lib', f), 'utf8');
+  for (const [file, dict, extra] of [['dashboard.mjs', DASH, ['openGaps1', 'openGapsN', 'highOpen1', 'highOpenN']], ['prototype.mjs', PROTO, []]]) {
+    const used = new Set([...src(file).matchAll(/\bt\('([A-Za-z0-9_]+)'[,)]/g)].map((m) => m[1]).concat(extra));
+    for (const lang of Object.keys(dict)) {
+      const missing = [...used].filter((k) => dict[lang][k] == null);
+      assert.deepEqual(missing, [], `${file} ${lang}`);
+    }
+  }
+});
+
+test('BRIEF language drives the prototype and dashboard; --lang overrides it', async () => {
+  const { renderPrototype } = await import('../skills/openidea/scripts/lib/prototype.mjs');
+  const { spawnSync } = await import('node:child_process');
+  const dir = copyFixture();
+  edit(dir, 'BRIEF.md', (s) => s.replace(/^---\n/, '---\nlanguage: id\n'));
+  const p = loadProject(dir);
+  const proto = renderPrototype(p, 'X', { mode: 'user' });
+  assert.match(proto, /<html lang="id">/);
+  assert.match(proto, /"whatToDo":"Apa yang ingin Anda lakukan\?"/);
+  const dash = renderDashboard(p, [], { mode: 'client' });
+  assert.match(dash, /<html lang="id">/);
+  assert.match(dash, /"h_decide":"Apa yang perlu diputuskan"/);
+  assert.match(dash, /"plural":"Alur"/);
+  assert.match(renderDashboard(p, [], { mode: 'client', lang: 'en' }), /<html lang="en">/);
+  const cli = join(dirname(fileURLToPath(import.meta.url)), '..', 'skills/openidea/scripts/openidea.mjs');
+  assert.equal(spawnSync(process.execPath, [cli, 'prototype', '--root', dir, '--lang', 'fr']).status, 2);
 });

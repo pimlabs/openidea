@@ -4,8 +4,9 @@ import { analyze } from './analyze.mjs';
 import { BLUEPRINT_KINDS, depthReport } from './validate.mjs';
 import { features, contextDiagram, activityDiagram, stateDiagram } from './diagrams.mjs';
 import { estimate } from './estimate.mjs';
+import { DASH, KIND_NAMES, projectLang } from './i18n.mjs';
 
-function payload(p, issues, mode) {
+function payload(p, issues, mode, lang) {
   const client = mode === 'client';
   const a = analyze(p, issues);
   const ideas = p.ideas
@@ -32,13 +33,17 @@ function payload(p, issues, mode) {
   } : null;
   const featureList = features(p, a.open).map((f) => ({ ...f, ideas: f.ideas.filter((id) => !client || visibleIdeas.has(id)) }));
   const est = estimate(p);
+  const names = KIND_NAMES[lang] || {};
+  const kinds = Object.fromEntries(Object.entries(BLUEPRINT_KINDS).map(([k, v]) => [k, names[k] ? { ...v, label: names[k][0], plural: names[k][1] } : v]));
   return {
     mode,
+    lang,
+    T: DASH[lang] || DASH.en,
     project,
     estimate: est && {
       total: est.total, gapCost: est.gapCost,
       calibration: { team: est.calibration.team, capacity: est.calibration.capacity, factor: est.calibration.factor, samples: est.calibration.samples, start: est.calibration.start, present: est.calibration.present, setup: est.calibration.coef.setup, stabilize: est.calibration.coef.stabilize },
-      phases: est.phases.map((ph) => ({ id: ph.id, name: ph.name, low: ph.low, high: ph.high, weeks: ph.weeks, startWeek: ph.startWeek, endWeek: ph.endWeek, endDate: ph.endDate || null, setup: ph.setup,
+      phases: est.phases.map((ph) => ({ id: ph.id, name: ph.name, low: ph.low, high: ph.high, weeks: ph.weeks, likelyWeeks: ph.likelyWeeks, endDateLikely: ph.endDateLikely || null, startWeek: ph.startWeek, endWeek: ph.endWeek, endDate: ph.endDate || null, setup: ph.setup,
         items: ph.items.map((it) => ({ kind: it.kind, id: it.id, name: it.name, low: it.low, high: it.high, reasons: it.reasons })) })),
       unplanned: est.unplanned.map((it) => ({ kind: it.kind, id: it.id, name: it.name, low: it.low, high: it.high })),
     },
@@ -50,7 +55,7 @@ function payload(p, issues, mode) {
     queue: a.queue.map((g) => g.data.id),
     milestones: a.milestones.map((m) => ({ name: m.name, id: m.id, status: m.status || 'draft', approvedIn: m.approvedIn, ideas: m.ideas.filter((id) => visibleIdeas.has(id)), blockingGaps: m.blockingGaps })),
     blueprint: p.blueprint || null,
-    kinds: BLUEPRINT_KINDS,
+    kinds,
     depth: p.blueprint ? depthReport(p.blueprint) : null,
     counts: a.counts,
     assumptions: a.assumptions,
@@ -58,9 +63,10 @@ function payload(p, issues, mode) {
   };
 }
 
-export function renderDashboard(p, issues, { mode = 'internal' } = {}) {
-  const json = JSON.stringify(payload(p, issues, mode)).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-  return TEMPLATE.replace('/*__DATA__*/', () => json);
+export function renderDashboard(p, issues, { mode = 'internal', lang } = {}) {
+  const code = projectLang(p, lang);
+  const json = JSON.stringify(payload(p, issues, mode, code)).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  return TEMPLATE.replace('<html lang="en">', () => `<html lang="${code}">`).replace('/*__DATA__*/', () => json);
 }
 
 const TEMPLATE = String.raw`<!doctype html>
@@ -92,6 +98,13 @@ details.fold{margin:16px 0}details.fold>summary{cursor:pointer;color:var(--accen
 main{max-width:1180px;margin:0 auto;padding:24px max(20px,env(safe-area-inset-right)) calc(80px + env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
 h1{font-size:26px;line-height:1.25;margin:0 0 6px;letter-spacing:-.015em}h2{font-size:18px;margin:32px 0 12px}h3{font-size:15px;margin:18px 0 6px}
 .lede{color:var(--muted);margin:0 0 20px;max-width:760px}
+.hero{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:8px}.hero .vision{font-size:17px;line-height:1.5;margin:4px 0 14px;max-width:820px}
+.facts{display:grid;grid-template-columns:150px 1fr;gap:8px 16px;margin:0}.facts dt{color:var(--muted);font-size:13px;font-weight:600}.facts dd{margin:0}.facts ul{margin:0;padding-left:18px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px;padding:0;list-style:none;counter-reset:st}.steps li{counter-increment:st}.steps .st{cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:600;text-decoration:none}.steps .st:before{content:counter(st);display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px}
+.secnum{color:var(--accent);margin-right:6px}.sec-lede{color:var(--muted);margin:-6px 0 12px;max-width:760px}
+.actor h3{margin:0 0 2px}.actor ul{margin:8px 0 0;padding-left:18px}.idea-card .t{font-weight:600}.idea-card .p{margin:4px 0}.idea-card .d{color:var(--muted);font-size:13px}
+.phase-row{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--border)}.phase-row:first-child{border-top:0}.phase-row .n{font-weight:700;color:var(--accent)}
+.next-link{margin:10px 0 0;font-size:14px}
 .grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 /* Anything you can open has data-href: hover lift, pointer, and a chevron. Plain cards never react. */
@@ -170,6 +183,7 @@ header{position:static}
 .mode{margin-left:auto}
 /* Phones: the section tabs sit under the title and stick to the top. Not fixed to the bottom, where iOS Safari's own toolbar moves with the scroll. */
 #nav{display:none}
+.facts{grid-template-columns:1fr;gap:2px 0}.facts dd{margin-bottom:8px}.hero{padding:16px}
 #mnav{position:-webkit-sticky;position:sticky;top:0;z-index:10;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:var(--bg);border-bottom:1px solid var(--border);padding:4px max(6px,env(safe-area-inset-right)) 4px max(6px,env(safe-area-inset-left))}
 nav a{text-align:center;padding:10px 2px;font-size:12.5px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px}
 nav a .badge{margin-left:3px;min-width:16px;line-height:16px;font-size:10.5px}
@@ -209,13 +223,18 @@ td.emptycell{display:none}
 </head>
 <body>
 <header><div class="bar"><div class="brand" id="brand"></div><nav id="nav"></nav><span class="mode" id="mode"></span></div></header>
-<nav id="mnav" aria-label="Sections"></nav>
+<nav id="mnav"></nav>
 <main id="app"></main>
 <script type="application/json" id="data">/*__DATA__*/</script>
 <script>
 (function(){
 var D = JSON.parse(document.getElementById('data').textContent);
 var CLIENT = D.mode === 'client';
+var T = D.T || {};
+function t(key){var v=T[key]==null?key:T[key], args=[].slice.call(arguments,1);return String(v).replace(/\{(x|y)\}/g,function(_,n){return n==='x'?args[0]:args[1];});}
+function tn(key,n){return t(key+(n===1?'1':'N'),num(n));}
+function tv(v){var k='v_'+v;return T[k]!=null?T[k]:String(v).replace(/_/g,' ');}
+function num(x){return T.decimal===','?String(x).replace('.',','):String(x);}
 var app = document.getElementById('app');
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 var SEV={high:'red',error:'red',medium:'amber',warning:'amber',low:'gray',info:'gray'};
@@ -223,7 +242,7 @@ var ST={open:'red',blocked:'red',captured:'amber',validating:'amber',draft:'ambe
 var ST_COLOR={red:'var(--red)',amber:'var(--amber)',orange:'var(--orange)',green:'var(--green)',purple:'var(--purple)',gray:'var(--gray)'};
 function pill(v,cls){var k=cls||v,c;
   if(k==='tag') c='pill tag'; else if(k==='rank') c='pill rank'; else if(SEV[k]) c='pill sev-'+SEV[k]; else if(ST[k]) c='pill st st-'+ST[k]; else c='pill tag';
-  return '<span class="'+c+'">'+esc(String(v).replace(/_/g,' '))+'</span>';}
+  return '<span class="'+c+'">'+esc(tv(v))+'</span>';}
 function filled(v){if(v==null)return false;if(Array.isArray(v))return v.length>0;if(typeof v==='string')return v.trim()!==''&&v.trim().toUpperCase()!=='TBD';return true;}
 function get(o,p){return p.split('.').reduce(function(x,k){return x==null?undefined:x[k];},o);}
 function inline(s){
@@ -263,7 +282,7 @@ function ideaLink(id){return ideaById[id]?'<a href="#idea/'+encodeURIComponent(i
 function gapLink(id){return '<a href="#gap/'+encodeURIComponent(id)+'">'+esc(id)+'</a>';}
 function openGap(g){return g.data.status==='open'||g.data.status==='validating';}
 function bpEls(){var out=[];if(!D.blueprint)return out;Object.keys(D.kinds).forEach(function(k){(D.blueprint[k]||[]).forEach(function(el){out.push({kind:k,el:el});});});return out;}
-function copyBtn(text){return '<div class="cmd"><span class="lbl">To resolve it, run in Claude Code:</span><code>'+esc(text)+'</code><button class="btn" data-copy="'+esc(text)+'">Copy</button></div>';}
+function copyBtn(text){return '<div class="cmd"><span class="lbl">'+t('toResolve')+'</span><code>'+esc(text)+'</code><button class="btn" data-copy="'+esc(text)+'">'+t('copy')+'</button></div>';}
 document.addEventListener('click',function(e){
   if(e.target.closest('a,button,input,select,textarea,[data-copy]'))return;
   var c=e.target.closest('[data-href]'); if(!c)return;
@@ -273,124 +292,175 @@ document.addEventListener('click',function(e){
 function go(h){ if(h.charAt(0)==='@'){var t=document.getElementById(h.slice(1)); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); return;} location.hash=h; }
 document.addEventListener('keydown',function(e){var c=e.target.closest&&e.target.closest('[data-href]');if(c&&e.target===c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();go(c.getAttribute('data-href'));}});
 document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var t=b.getAttribute('data-copy');
-  var done=function(){var o=b.textContent;b.textContent='Copied \u2713';setTimeout(function(){b.textContent=o;},1200);};
+  var done=function(){var o=b.textContent;b.textContent=t('copied');setTimeout(function(){b.textContent=o;},1200);};
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){fallback(t);done();});}else{fallback(t);done();}});
 function fallback(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();}
 
 // Five sections, in the order a reader asks: what needs me, what does the app do, when does it ship, how is it structured, where did it come from.
-var PAGES = [['overview','Overview'],['features','Features'],['roadmap','Roadmap'],['blueprint','Blueprint'],['ideas','Ideas']];
+var PAGES = [['overview',t('nav_overview')],['features',t('nav_features')],['roadmap',t('nav_roadmap')],['blueprint',t('nav_blueprint')],['ideas',t('nav_ideas')]];
 document.getElementById('brand').innerHTML = esc(D.project)+'<small>OpenIdea</small>';
-var modeEl = document.getElementById('mode'); modeEl.textContent = CLIENT?'Client view \u00b7 safe to share':'Internal \u00b7 do not share'; if(CLIENT) modeEl.className='mode client';
+document.getElementById('mnav').setAttribute('aria-label',t('sections'));document.documentElement.lang=D.lang||'en';
+var modeEl = document.getElementById('mode'); modeEl.textContent = CLIENT?t('clientMode'):t('internalMode'); if(CLIENT) modeEl.className='mode client';
 document.title = D.project + ' · OpenIdea';
 
+function briefSection(t){if(!D.brief)return '';var m=String(D.brief.body).split(/^##\s+/m).filter(function(x){return x.toLowerCase().indexOf(t.toLowerCase())===0;})[0];return m?m.replace(/^[^\n]*\n/,'').trim():'';}
+function briefList(t){return briefSection(t).split('\n').map(function(l){return l.replace(/^\s*[-*]\s*(\[[ x]\]\s*)?/,'').trim();}).filter(Boolean);}
+function briefPara(t){return briefSection(t).split('\n').filter(function(l){return !/^\s*[-*]/.test(l);}).join(' ').trim();}
+function q5(body,label){var m=String(body||'').match(new RegExp('\\*\\*'+label+'\\*\\*:?\\s*([^\\n]+)'));return m?m[1].trim():'';}
+function human(id){var s=String(id).replace(/-/g,' ');return s.charAt(0).toUpperCase()+s.slice(1);}
+function activeFeatures(){return D.ideas.filter(function(i){return i.location==='active'&&i.data.type!=='chore'&&['killed','merged','split'].indexOf(i.data.status)<0;});}
+// The overview reads top to bottom as a story: what the app is, who uses it, what it does, how it is delivered,
+// how solid the definition is, and what needs a decision. Every section links to its detail page.
 function overview(){
-  var c = D.counts, h = '<h1>'+esc(D.project)+'</h1><p class="lede">How clear and validated this product definition is right now, and what needs your decision.</p>';
+  var c = D.counts, feats = activeFeatures();
+  var vision = briefPara('Vision'), users = briefPara('Target Users'), value = briefPara('Core Value Prop');
+  var order = {}; D.milestones.forEach(function(m,n){m.ideas.forEach(function(id,k){if(order[id]==null)order[id]=n*1000+k;});});
+  var replaces = feats.slice().sort(function(a,b){return (order[a.data.id]==null?1e9:order[a.data.id])-(order[b.data.id]==null?1e9:order[b.data.id]);}).map(function(i){return i.data.replaces;}).filter(Boolean);
+  var h = '<div class="hero"><h1>'+esc(D.project)+'</h1>'+(vision?'<p class="vision">'+esc(vision)+'</p>':'<p class="vision meta">'+t('noBrief')+'</p>');
+  h += '<dl class="facts">'+(users?'<dt>'+t('for')+'</dt><dd>'+esc(users)+'</dd>':'')+(value?'<dt>'+t('whyMatters')+'</dt><dd>'+esc(value)+'</dd>':'')+
+    (replaces.length?'<dt>'+t('replacesToday')+'</dt><dd><ul>'+replaces.map(function(r){return '<li>'+esc(r)+'</li>';}).join('')+'</ul></dd>':'')+
+    (briefList('Non-goals').length?'<dt>'+t('notIncluded')+'</dt><dd><ul>'+briefList('Non-goals').map(function(r){return '<li>'+esc(r)+'</li>';}).join('')+'</ul></dd>':'')+
+    (briefList('Constraints').length?'<dt>'+t('constraints')+'</dt><dd><ul>'+briefList('Constraints').map(function(r){return '<li>'+esc(r)+'</li>';}).join('')+'</ul></dd>':'')+'</dl>';
+  var steps=[['s-users',t('st_users')],['s-what',t('st_what')],['s-plan',t('st_plan')],['s-health',t('st_health')],['decide',t('st_decide')]];
+  h += '<ol class="steps">'+steps.map(function(x){return '<li><span class="st" role="link" tabindex="0" data-href="@'+x[0]+'">'+x[1]+'</span></li>';}).join('')+'</ol></div>';
+
+  // 1. Who uses it
+  var actors = D.blueprint&&D.blueprint.actors||[], flows = D.blueprint&&D.blueprint.flows||[];
+  h += '<h2 id="s-users"><span class="secnum">1</span>'+t('h_users')+'</h2>';
+  if(actors.length){
+    h += '<div class="grid g2">'+actors.map(function(a){var fs=flows.filter(function(f){return f.actor===a.id;});
+      return '<div class="card actor"><h3>'+esc(a.name||a.id)+(a.assumption?' '+pill('assumption'):'')+'</h3><div class="meta">'+esc(a.description||'')+'</div>'+
+        (fs.length?'<ul>'+fs.map(function(f){return '<li><a href="#feature/'+encodeURIComponent(f.id)+'">'+esc(f.name||f.id)+'</a></li>';}).join('')+'</ul>':'<p class="meta" style="margin:8px 0 0">'+t('noFeatureRole')+'</p>')+'</div>';}).join('')+'</div>';
+    h += '<p class="next-link"><a href="#features">'+t('allFeatures',D.features.length)+'</a></p>';
+  } else h += '<p class="empty">'+t('noBpRoles')+'</p>';
+
+  // 2. What it does: the ideas, grouped by phase in execution order
+  h += '<h2 id="s-what"><span class="secnum">2</span>'+t('h_what')+'</h2><p class="sec-lede">'+t('whatLede')+'</p>';
+  var groups = D.milestones.map(function(m){return [m.name, m.ideas.map(function(id){return ideaById[id];}).filter(function(i){return i&&feats.indexOf(i)>=0;})];});
+  var planned = {}; D.milestones.forEach(function(m){m.ideas.forEach(function(id){planned[id]=1;});});
+  var unplanned = feats.filter(function(i){return !planned[i.data.id];}); if(unplanned.length) groups.push([D.milestones.length?t('notPlannedYet'):t('ideasWord'), unplanned]);
+  var openBy={}; D.gaps.filter(openGap).forEach(function(g){(g.data.ideas||[]).forEach(function(id){openBy[id]=(openBy[id]||0)+1;});});
+  groups.forEach(function(gr){ if(!gr[1].length) return;
+    h += '<h3>'+esc(gr[0])+'</h3><div class="grid g2">'+gr[1].map(function(i){var d=i.data, p=q5(i.body,'Problem'), done=q5(i.body,'Done looks like');
+      return '<div class="card idea-card" data-href="idea/'+encodeURIComponent(d.id)+'" tabindex="0"><div class="chips">'+pill(d.status)+(openBy[d.id]?pill(tn('openGaps',openBy[d.id]),openBy[d.id]?'medium':'tag'):'')+'</div><div class="t">'+esc(d.title||human(d.id))+'</div>'+(p?'<div class="p">'+esc(p)+'</div>':'')+(done?'<div class="d"><strong>'+t('doneWhen')+'</strong> '+esc(done)+'</div>':'')+'</div>';}).join('')+'</div>';});
+  if(!feats.length) h += '<p class="empty">'+t('noIdeas')+'</p>';
+
+  // 3. How it is delivered
+  h += '<h2 id="s-plan"><span class="secnum">3</span>'+t('h_plan')+'</h2>';
+  if(D.estimate&&D.estimate.phases.length){var E=D.estimate;
+    h += '<p class="sec-lede">'+t('likelyWeeks',rng(E.total.likelyWeeks,E.total.likelyWeeks))+(E.total.endDateLikely?t('around',fmtDate(E.total.endDateLikely)):'')+t('betweenOpen',rng(E.total.weeks[0],E.total.weeks[1],t('weeks')))+'</p><div class="card">'+
+      E.phases.filter(function(ph){return ph.id!=='all';}).map(function(ph,n){var m=D.milestones.filter(function(x){return x.id===ph.id;})[0];
+        return '<div class="phase-row"><span class="n">'+(n+1)+'</span><div><strong>'+esc(ph.name)+'</strong><div class="meta">'+(m?m.ideas.map(function(id){var i=ideaById[id];return esc(i&&i.data.title||human(id));}).join(', '):'')+'</div></div><div style="text-align:right">'+pill(t('likelyX',rng(ph.likelyWeeks,ph.likelyWeeks,t('wk'))),'tag')+(m&&m.blockingGaps.length?'<div>'+pill(t('gateBlocked'),'blocked')+'</div>':'')+'</div></div>';}).join('')+'</div>';
+    h += '<p class="next-link"><a href="#roadmap">'+t('timelineLink')+'</a></p>';
+  } else h += D.milestones.length?milestoneTable():'<p class="empty">'+t('noRoadmap')+'</p>';
+
+  // 4. How clear the definition is
   var depthPct = D.depth && D.depth.score!=null ? Math.round(D.depth.score*100) : null;
   var ready = (c.byStatus.ready||0), cap = (c.byStatus.captured||0);
-  h += '<div class="grid g4">';
-  h += '<div class="card stat '+(c.openHigh?'bad primary':'good')+'" '+(D.queue.length?'data-href="@decide" tabindex="0"':'')+'><div class="v">'+c.openHigh+'</div><div class="k">Open high-impact gaps</div><div class="s">'+((c.gapStatus.open||0)+(c.gapStatus.validating||0))+' open in total</div></div>';
-  h += '<div class="card stat" data-href="ideas" tabindex="0"><div class="v">'+ready+' / '+(ready+cap)+'</div><div class="k">Ideas ready</div><div class="s">'+cap+' still captured</div></div>';
-  h += '<div class="card stat '+(depthPct==null?'':depthPct<60?'bad':depthPct<85?'warn':'good')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+(depthPct==null?'–':depthPct+'%')+'</div><div class="k">Blueprint depth</div><div class="s">'+(D.depth?D.depth.filled+'/'+D.depth.total+' mandatory slots':'No blueprint yet')+'</div>'+(depthPct==null?'':'<div class="depth"><span style="width:'+depthPct+'%;background:'+(depthPct>=85?'var(--green)':depthPct>=60?'var(--amber)':'var(--red)')+'"></span></div>')+'</div>';
-  h += '<div class="card stat '+(D.assumptions?'warn':'')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+D.assumptions+'</div><div class="k">Hidden assumptions</div><div class="s">Blueprint elements with no source idea</div></div>';
-  if(D.estimate) h += '<div class="card stat" data-href="roadmap" tabindex="0"><div class="v">'+rng(D.estimate.total.weeks[0],D.estimate.total.weeks[1])+'<small> wk</small></div><div class="k">Estimated timeline</div><div class="s">'+(D.estimate.total.endDate?'Done '+fmtDate(D.estimate.total.endDate[0])+' to '+fmtDate(D.estimate.total.endDate[1]):rng(D.estimate.total.low,D.estimate.total.high,'person-days'))+'</div></div>';
-  if(!CLIENT) h += '<div class="card stat '+(c.errors?'bad':'good')+'" data-href="issues" tabindex="0"><div class="v">'+c.errors+'</div><div class="k">Check errors</div><div class="s">'+c.warnings+' warnings</div></div>';
+  h += '<h2 id="s-health"><span class="secnum">4</span>'+t('h_health')+'</h2><p class="sec-lede">'+t('healthLede')+'</p><div class="grid g4">';
+  h += '<div class="card stat '+(c.openHigh?'bad primary':'good')+'" '+(D.queue.length?'data-href="@decide" tabindex="0"':'')+'><div class="v">'+c.openHigh+'</div><div class="k">'+t('openHigh')+'</div><div class="s">'+t('openTotal',(c.gapStatus.open||0)+(c.gapStatus.validating||0))+'</div></div>';
+  h += '<div class="card stat" data-href="ideas" tabindex="0"><div class="v">'+ready+' / '+(ready+cap)+'</div><div class="k">'+t('ideasReady')+'</div><div class="s">'+t('stillCaptured',cap)+'</div></div>';
+  h += '<div class="card stat '+(depthPct==null?'':depthPct<60?'bad':depthPct<85?'warn':'good')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+(depthPct==null?'–':depthPct+'%')+'</div><div class="k">'+t('bpDepth')+'</div><div class="s">'+(D.depth?t('mandatoryFilled',D.depth.filled+'/'+D.depth.total):t('noBpYet'))+'</div>'+(depthPct==null?'':'<div class="depth"><span style="width:'+depthPct+'%;background:'+(depthPct>=85?'var(--green)':depthPct>=60?'var(--amber)':'var(--red)')+'"></span></div>')+'</div>';
+  h += '<div class="card stat '+(D.assumptions?'warn':'')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+D.assumptions+'</div><div class="k">'+t('hiddenAssumptions')+'</div><div class="s">'+t('noIdeaAsked')+'</div></div>';
+  if(!CLIENT) h += '<div class="card stat '+(c.errors?'bad':'good')+'" data-href="issues" tabindex="0"><div class="v">'+c.errors+'</div><div class="k">'+t('checkErrors')+'</div><div class="s">'+t('warningsN',c.warnings)+'</div></div>';
   h += '</div>';
-  h += '<h2 id="decide">Decide next</h2>'+queueCards(D.queue);
+
+  // 5. What needs a decision
+  h += '<h2 id="decide"><span class="secnum">5</span>'+t('h_decide')+'</h2><p class="sec-lede">'+t('decideLede',Math.min(D.queue.length,5))+'</p>'+queueCards(D.queue);
   var rest = D.gaps.filter(function(g){return D.queue.indexOf(g.data.id)<0;});
-  if(rest.length) h += '<details class="fold"><summary>All other gaps ('+rest.length+')</summary>'+gapTable(rest)+'</details>';
-  h += '<h2>Milestone gates</h2>' + milestoneTable();
-  h += '<details class="fold"><summary>How to read colours and labels</summary><div class="card legend-card"><div class="lg"><span class="sw" style="background:var(--red)"></span><div><strong>Red</strong>: needs a decision or blocks progress (open gap, high impact, error, not defined)</div></div>'+
-    '<div class="lg"><span class="sw" style="background:var(--amber)"></span><div><strong>Amber</strong>: in progress or worth a look (captured, validating, draft, medium, warning)</div></div>'+
-    '<div class="lg"><span class="sw" style="background:var(--orange)"></span><div><strong>Orange</strong>: risk knowingly accepted</div></div>'+
-    '<div class="lg"><span class="sw" style="background:var(--green)"></span><div><strong>Green</strong>: done or safe (ready, resolved, approved, gate clear)</div></div>'+
-    '<div class="lg"><span class="sw" style="background:var(--purple)"></span><div><strong>Purple</strong>: handed off to OpenSpec (promoted)</div></div>'+
-    '<div class="lg"><span class="sw" style="background:var(--gray)"></span><div><strong>Grey</strong>: inactive or low (parked, killed, dismissed, low impact)</div></div>'+
-    '<div class="lg"><span class="sw" style="background:var(--accent)"></span><div><strong>Blue</strong>: clickable. A card or row with \u203a opens</div></div>'+
-    '<p class="meta" style="margin:8px 0 0">Filled labels show <strong>severity</strong>, labels with a dot show <strong>status</strong>, plain grey text is just a <strong>tag</strong>.</p></div></details>';
-  if(D.brief) h += '<details class="fold"><summary>Product brief</summary><div class="card md">'+md(D.brief.body.replace(/^#\s+.*$/m,''))+'</div></details>';
+  if(rest.length) h += '<details class="fold"><summary>'+t('allOtherGaps',rest.length)+'</summary>'+gapTable(rest)+'</details>';
+  if(D.milestones.length) h += '<details class="fold"><summary>'+t('milestoneGates')+'</summary>'+milestoneTable()+'</details>';
+  h += '<details class="fold"><summary>'+t('howToRead')+'</summary><div class="card legend-card"><div class="lg"><span class="sw" style="background:var(--red)"></span><div>'+t('lg_red')+'</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--amber)"></span><div>'+t('lg_amber')+'</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--orange)"></span><div>'+t('lg_orange')+'</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--green)"></span><div>'+t('lg_green')+'</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--purple)"></span><div>'+t('lg_purple')+'</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--gray)"></span><div>'+t('lg_grey')+'</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--accent)"></span><div>'+t('lg_blue')+'</div></div>'+
+    '<p class="meta" style="margin:8px 0 0">'+t('lg_pills')+'</p></div></details>';
   return h;
 }
 function milestoneTable(){
-  if(!D.milestones.length) return '<p class="empty">No ROADMAP.md yet. Run /openidea:plan.</p>';
-  return '<table><thead><tr><th>Milestone</th><th>ID</th><th>Status</th><th>Gate</th><th>Ideas</th></tr></thead><tbody>'+D.milestones.map(function(m){
-    var gate = m.blockingGaps.length?pill(m.blockingGaps.length+' high gap'+(m.blockingGaps.length>1?'s':'')+' open','blocked'):pill('clear','clear');
+  if(!D.milestones.length) return '<p class="empty">'+t('noRoadmap')+'</p>';
+  return '<table><thead><tr><th>'+t('th_milestone')+'</th><th>'+t('th_id')+'</th><th>'+t('th_status')+'</th><th>'+t('th_gate')+'</th><th>'+t('th_ideas')+'</th></tr></thead><tbody>'+D.milestones.map(function(m){
+    var gate = m.blockingGaps.length?pill(tn('highOpen',m.blockingGaps.length),'blocked'):pill(t('clear'),'clear');
     return '<tr><td><strong>'+esc(m.name)+'</strong></td><td><code>'+esc(m.id)+'</code></td><td>'+pill(m.status)+'</td><td>'+gate+(m.blockingGaps.length?'<div class="meta">'+m.blockingGaps.map(gapLink).join(', ')+'</div>':'')+'</td><td>'+m.ideas.map(ideaLink).join(', ')+'</td></tr>';}).join('')+'</tbody></table>';
 }
 function queueCards(ids, noRank){
-  if(!ids.length) return '<p class="empty">No open gaps. Run /openidea:evaluate to look for blind spots.</p>';
+  if(!ids.length) return '<p class="empty">'+t('noOpenGaps')+'</p>';
   return '<div class="grid g2">'+ids.map(function(id,n){var g=gapById[id];if(!g)return '';var d=g.data;
     var body = CLIENT?'':sectionOf(g.body,'Proposed validation')||sectionOf(g.body,'Usulan validasi');
     return '<div class="card" data-href="gap/'+encodeURIComponent(id)+'" tabindex="0"><div class="chips">'+(noRank?'':pill('#'+(n+1),'rank'))+pill(d.impact)+pill(d.kind,'tag')+pill(d.status)+'</div><div class="q">'+esc(d.question)+'</div>'+
       (body?'<div class="md meta">'+md(body)+'</div>':'')+
-      '<div class="meta">Ideas: '+((d.ideas||[]).map(function(x){return esc(x);}).join(', ')||'project-wide')+'</div>'+
+      '<div class="meta">'+t('ideasColon')+((d.ideas||[]).map(function(x){var i=ideaById[x];return esc(i&&i.data.title||human(x));}).join(', ')||t('projectWide'))+'</div>'+
       (CLIENT?'':copyBtn('/openidea:resolve '+id))+'</div>';}).join('')+'</div>';
 }
 function sectionOf(body,title){var m=String(body||'').split(/^##\s+/m).filter(function(s){return s.toLowerCase().indexOf(title.toLowerCase())===0;})[0];return m?m.replace(/^[^\n]*\n/,'').trim():'';}
 function gapTable(list){
-  if(!list.length) return '<p class="empty">No gaps recorded.</p>';
+  if(!list.length) return '<p class="empty">'+t('noGaps')+'</p>';
   var rank={high:3,medium:2,low:1},st={open:0,validating:1,accepted_risk:2,resolved:3,dismissed:4};
   list = list.slice().sort(function(a,b){return (st[a.data.status]-st[b.data.status])||(rank[b.data.impact]-rank[a.data.impact])||String(a.data.id).localeCompare(b.data.id);});
-  return '<table><thead><tr><th>Gap</th><th>Question</th><th>Kind</th><th>Impact</th><th>Status</th><th>Ideas</th></tr></thead><tbody>'+list.map(function(g){var d=g.data;
-    return '<tr><td>'+gapLink(d.id)+'</td><td>'+esc(d.question)+'</td><td>'+esc(d.kind)+'</td><td>'+pill(d.impact)+'</td><td>'+pill(d.status)+'</td><td>'+(d.ideas||[]).map(ideaLink).join(', ')+'</td></tr>';}).join('')+'</tbody></table>';
+  return '<table><thead><tr><th>'+t('th_gap')+'</th><th>'+t('th_question')+'</th><th>'+t('th_kind')+'</th><th>'+t('th_impact')+'</th><th>'+t('th_status')+'</th><th>'+t('th_ideas')+'</th></tr></thead><tbody>'+list.map(function(g){var d=g.data;
+    return '<tr><td>'+gapLink(d.id)+'</td><td>'+esc(d.question)+'</td><td>'+esc(tv(d.kind))+'</td><td>'+pill(d.impact)+'</td><td>'+pill(d.status)+'</td><td>'+(d.ideas||[]).map(ideaLink).join(', ')+'</td></tr>';}).join('')+'</tbody></table>';
 }
 function gap(id){
-  var g = gapById[id]; if(!g) return '<p>Gap not found.</p>';
+  var g = gapById[id]; if(!g) return '<p>'+t('gapNotFound')+'</p>';
   var d = g.data;
-  var h = '<p class="back"><a href="#overview">← Overview</a></p><h1>'+esc(d.id)+'</h1><div class="chips">'+pill(d.impact)+pill(d.kind,'tag')+pill('confidence '+d.confidence,'tag')+pill(d.status)+(d.found_by?pill('found by '+d.found_by,'tag'):'')+'</div>';
+  var h = '<p class="back"><a href="#overview">'+t('backOverview')+'</a></p><h1>'+esc(d.id)+'</h1><div class="chips">'+pill(d.impact)+pill(d.kind,'tag')+pill(t('confidenceX',tv(d.confidence)),'tag')+pill(d.status)+(d.found_by?pill(t('foundByX',tv(d.found_by)),'tag'):'')+'</div>';
   h += '<div class="q" style="margin-top:12px">'+esc(d.question)+'</div>';
   if(!CLIENT) h += copyBtn('/openidea:resolve '+d.id);
-  h += '<p class="meta">Ideas: '+((d.ideas||[]).map(ideaLink).join(', ')||'project-wide')+(d.sources&&d.sources.length?' · Sources: '+d.sources.map(function(s){return '<code>'+esc(s)+'</code>';}).join(' '):'')+'</p>';
-  if(d.resolution) h += '<div class="card"><strong>Resolution:</strong> '+inline(d.resolution)+'</div>';
+  h += '<p class="meta">'+t('ideasColon')+((d.ideas||[]).map(ideaLink).join(', ')||t('projectWide'))+(d.sources&&d.sources.length?' · '+t('sources')+d.sources.map(function(s){return '<code>'+esc(s)+'</code>';}).join(' '):'')+'</p>';
+  if(d.resolution) h += '<div class="card"><strong>'+t('resolution')+'</strong> '+inline(d.resolution)+'</div>';
   if(g.body && g.body.trim()) h += '<div class="card md" style="margin-top:12px">'+md(g.body)+'</div>';
   return h;
 }
 function statusBar(){
   var c=D.counts, order=[['ready','var(--green)'],['captured','var(--amber)'],['parked','var(--gray)'],['promoted','var(--purple)'],['merged','var(--gray-soft)'],['split','var(--gray-soft)'],['killed','var(--dim)']];
   var total = order.reduce(function(s,o){return s+(c.byStatus[o[0]]||0);},0); if(!total) return '';
-  return '<div class="card" style="margin-bottom:12px"><div class="bar-status">'+order.map(function(o){var n=c.byStatus[o[0]]||0;return n?'<span title="'+o[0]+': '+n+'" style="width:'+(n/total*100)+'%;background:'+o[1]+'"></span>':'';}).join('')+'</div>'+
-    '<div class="legend">'+order.filter(function(o){return c.byStatus[o[0]];}).map(function(o){return '<span><span class="dot" style="background:'+o[1]+'"></span>'+o[0]+' '+c.byStatus[o[0]]+'</span>';}).join('')+'</div></div>';
+  return '<div class="card" style="margin-bottom:12px"><div class="bar-status">'+order.map(function(o){var n=c.byStatus[o[0]]||0;return n?'<span title="'+tv(o[0])+': '+n+'" style="width:'+(n/total*100)+'%;background:'+o[1]+'"></span>':'';}).join('')+'</div>'+
+    '<div class="legend">'+order.filter(function(o){return c.byStatus[o[0]];}).map(function(o){return '<span><span class="dot" style="background:'+o[1]+'"></span>'+tv(o[0])+' '+c.byStatus[o[0]]+'</span>';}).join('')+'</div></div>';
 }
 function ideas(){
   var cats = {}; D.ideas.forEach(function(i){if(i.data.category)cats[i.data.category]=1;});
-  var h = '<h1>Ideas</h1><p class="lede">The source of everything else: every idea on disk, active and archived. Open one for its full definition, its gaps, and what the blueprint derives from it.</p>'+statusBar();
-  h += '<div class="filters"><input id="fq" placeholder="Search id or category"><select id="fs"><option value="">All statuses</option>'+['captured','ready','parked','promoted','merged','split','killed'].map(function(s){return '<option>'+s+'</option>';}).join('')+'</select><select id="fc"><option value="">All categories</option>'+Object.keys(cats).sort().map(function(c){return '<option>'+esc(c)+'</option>';}).join('')+'</select></div><div id="itable"></div>';
+  var h = '<h1>'+t('ideasTitle')+'</h1><p class="lede">'+t('ideasLede')+'</p>'+statusBar();
+  h += '<div class="filters"><input id="fq" placeholder="'+t('searchIdeas')+'"><select id="fs"><option value="">'+t('allStatuses')+'</option>'+['captured','ready','parked','promoted','merged','split','killed'].map(function(s){return '<option value="'+s+'">'+esc(tv(s))+'</option>';}).join('')+'</select><select id="fc"><option value="">'+t('allCategories')+'</option>'+Object.keys(cats).sort().map(function(c){return '<option>'+esc(c)+'</option>';}).join('')+'</select></div><div id="itable"></div>';
   setTimeout(function(){var q=document.getElementById('fq'),s=document.getElementById('fs'),c=document.getElementById('fc');
     function draw(){var qv=q.value.toLowerCase();var list=D.ideas.filter(function(i){return (!s.value||i.data.status===s.value)&&(!c.value||i.data.category===c.value)&&(!qv||(i.data.id+' '+(i.data.category||'')).toLowerCase().indexOf(qv)>=0);});
       var openBy={};D.gaps.filter(openGap).forEach(function(g){(g.data.ideas||[]).forEach(function(id){openBy[id]=(openBy[id]||0)+1;});});
-      document.getElementById('itable').innerHTML = list.length?'<table><thead><tr><th>Idea</th><th>Status</th><th>Type</th><th>Category</th><th>Updated</th><th>Open gaps</th></tr></thead><tbody>'+list.map(function(i){var d=i.data;
-        return '<tr><td>'+ideaLink(d.id)+(d.needs_clarification?' '+pill('needs clarification','attention'):'')+'</td><td>'+pill(d.status)+'</td><td>'+esc(d.type||'feature')+'</td><td>'+esc(d.category||'')+'</td><td>'+esc(d.updated||'')+'</td><td>'+(openBy[d.id]?pill(openBy[d.id]+' open gap'+(openBy[d.id]>1?'s':''),'open'):'')+'</td></tr>';}).join('')+'</tbody></table>':'<p class="empty">No ideas match.</p>';}
+      document.getElementById('itable').innerHTML = list.length?'<table><thead><tr><th>'+t('th_idea')+'</th><th>'+t('th_status')+'</th><th>'+t('th_type')+'</th><th>'+t('th_category')+'</th><th>'+t('th_updated')+'</th><th>'+t('th_openGaps')+'</th></tr></thead><tbody>'+list.map(function(i){var d=i.data;
+        return '<tr><td>'+ideaLink(d.id)+(d.needs_clarification?' '+pill(t('needsClar'),'attention'):'')+'</td><td>'+pill(d.status)+'</td><td>'+esc(tv(d.type||'feature'))+'</td><td>'+esc(d.category||'')+'</td><td>'+esc(d.updated||'')+'</td><td>'+(openBy[d.id]?pill(tn('openGaps',openBy[d.id]),'open'):'')+'</td></tr>';}).join('')+'</tbody></table>':'<p class="empty">'+t('noIdeasMatch')+'</p>';}
     [q,s,c].forEach(function(e){e.addEventListener('input',draw);});draw();},0);
   return h;
 }
 function idea(id){
-  var i = ideaById[id]; if(!i) return '<p>Idea not found.</p>';
+  var i = ideaById[id]; if(!i) return '<p>'+t('ideaNotFound')+'</p>';
   var d = i.data;
-  var h = '<p class="back"><a href="#ideas">← Ideas</a></p><h1>'+esc(d.id)+'</h1><div class="chips">'+pill(d.status)+pill(d.type||'feature','tag')+(d.category?'<span class="chip">'+esc(d.category)+'</span>':'')+(d.needs_clarification?pill('needs clarification','attention'):'')+'</div>';
+  var h = '<p class="back"><a href="#ideas">'+t('backIdeas')+'</a></p><h1>'+esc(d.id)+'</h1><div class="chips">'+pill(d.status)+pill(tv(d.type||'feature'),'tag')+(d.category?'<span class="chip">'+esc(d.category)+'</span>':'')+(d.needs_clarification?pill(t('needsClar'),'attention'):'')+'</div>';
   var ms = D.milestones.filter(function(m){return m.ideas.indexOf(d.id)>=0;})[0];
   var facts = [];
-  if(ms) facts.push('Milestone: <strong>'+esc(ms.name)+'</strong>');
-  if(d.depends_on&&d.depends_on.length) facts.push('Depends on: '+d.depends_on.map(ideaLink).join(', '));
-  if(d.merged_into) facts.push('Merged into: '+ideaLink(d.merged_into));
-  if(d.split_into&&d.split_into.length) facts.push('Split into: '+d.split_into.map(ideaLink).join(', '));
-  if(d.promoted_to) facts.push('Promoted to: <code>'+esc(d.promoted_to)+'</code>');
-  if(d.replaces) facts.push('Replaces: '+esc(d.replaces));
-  if(d.triage_note) facts.push('Triage note: '+esc(d.triage_note));
+  if(ms) facts.push(t('f_milestone')+'<strong>'+esc(ms.name)+'</strong>');
+  if(d.depends_on&&d.depends_on.length) facts.push(t('f_depends')+''+d.depends_on.map(ideaLink).join(', '));
+  if(d.merged_into) facts.push(t('f_merged')+''+ideaLink(d.merged_into));
+  if(d.split_into&&d.split_into.length) facts.push(t('f_split')+''+d.split_into.map(ideaLink).join(', '));
+  if(d.promoted_to) facts.push(t('f_promoted')+'<code>'+esc(d.promoted_to)+'</code>');
+  if(d.replaces) facts.push(t('f_replaces')+''+esc(d.replaces));
+  if(d.triage_note) facts.push(t('f_triage')+''+esc(d.triage_note));
   if(facts.length) h += '<p class="meta">'+facts.join(' · ')+'</p>';
   h += '<div class="grid g2" style="margin-top:12px"><div class="card md">'+md(i.body)+'</div><div>';
   var gs = D.gaps.filter(function(g){return (g.data.ideas||[]).indexOf(d.id)>=0;});
-  h += '<h3>Gaps</h3>'+(gs.length?gs.map(function(g){return '<div class="issue">'+pill(g.data.impact)+' '+pill(g.data.status)+' '+gapLink(g.data.id)+'<div>'+esc(g.data.question)+'</div></div>';}).join(''):'<p class="empty">No gaps linked.</p>');
+  h += '<h3>'+t('h_gaps')+'</h3>'+(gs.length?gs.map(function(g){return '<div class="issue">'+pill(g.data.impact)+' '+pill(g.data.status)+' '+gapLink(g.data.id)+'<div>'+esc(g.data.question)+'</div></div>';}).join(''):'<p class="empty">'+t('noGapsLinked')+'</p>');
   var els = bpEls().filter(function(x){return (x.el.derived_from||[]).indexOf(d.id)>=0;});
-  h += '<h3>Blueprint derived from this idea</h3>'+(els.length?'<div class="chips">'+els.map(function(x){return '<a class="jump" href="#blueprint/'+x.kind+'/'+encodeURIComponent(x.el.id)+'">'+esc(D.kinds[x.kind].label)+': '+esc(x.el.name||x.el.id)+'</a>';}).join('')+'</div>':'<p class="empty">Nothing yet. Either the blueprint is stale or this idea is too vague to build.</p>');
-  if(d.history&&d.history.length) h += '<h3>History</h3><table><tbody>'+d.history.map(function(e){return '<tr><td>'+esc(e.date)+'</td><td>'+pill(e.status)+'</td><td class="meta">'+esc(e.note||e.reason||'')+'</td></tr>';}).join('')+'</tbody></table>';
+  h += '<h3>'+t('h_derived')+'</h3>'+(els.length?'<div class="chips">'+els.map(function(x){return '<a class="jump" href="#blueprint/'+x.kind+'/'+encodeURIComponent(x.el.id)+'">'+esc(D.kinds[x.kind].label)+': '+esc(x.el.name||x.el.id)+'</a>';}).join('')+'</div>':'<p class="empty">'+t('nothingYet')+'</p>');
+  if(d.history&&d.history.length) h += '<h3>'+t('h_history')+'</h3><table><tbody>'+d.history.map(function(e){return '<tr><td>'+esc(e.date)+'</td><td>'+pill(e.status)+'</td><td class="meta">'+esc(e.note||e.reason||'')+'</td></tr>';}).join('')+'</tbody></table>';
   return h+'</div></div>';
 }
 function fmt(v){if(v==null||v==='')return '';if(Array.isArray(v))return v.map(function(x){return typeof x==='object'?esc(JSON.stringify(x)):esc(x);}).join('<br>');if(typeof v==='object')return Object.keys(v).map(function(k){return '<span class="meta">'+esc(k)+':</span> '+fmt(v[k]);}).join('<br>');return esc(v);}
 function blueprint(focusKind, focusId){
-  var h = '<h1>Blueprint</h1>';
-  if(!D.blueprint) return h+'<p class="empty">No blueprint yet. Run /openidea:blueprint to derive one from the ideas.</p>';
-  h += '<p class="lede">Derived from the ideas, never edited by hand. Every element shows the ideas it comes from; red slots are mandatory details nobody has defined yet.'+(D.blueprint.generated?' Generated '+esc(D.blueprint.generated)+'.':'')+'</p>';
-  h += '<div class="toc"><a class="jump'+(!focusKind?' on':'')+'" href="#blueprint">All</a>'+Object.keys(D.kinds).map(function(k){var n=(D.blueprint[k]||[]).length;return n?'<a class="jump'+(focusKind===k?' on':'')+'" href="#blueprint/'+k+'">'+esc(D.kinds[k].plural)+' · '+n+'</a>':'';}).join('')+((D.blueprint.permissions||[]).length?'<a class="jump'+(focusKind==='permissions'?' on':'')+'" href="#blueprint/permissions">Permission matrix</a>':'')+(D.diagrams?'<a class="jump" href="#diagrams">All diagrams</a>':'')+'</div>';
-  if(!focusKind && D.diagrams) h += '<h2>System context</h2>'+diagramBlock('Who and what the system talks to', D.diagrams.context, 'Container architecture is a design decision and belongs in the OpenSpec design, not here.');
+  var h = '<h1>'+t('bpTitle')+'</h1>';
+  if(!D.blueprint) return h+'<p class="empty">'+t('noBp')+'</p>';
+  h += '<p class="lede">'+t('bpLede')+(D.blueprint.generated?esc(t('generatedX',D.blueprint.generated)):'')+'</p>';
+  h += '<div class="toc"><a class="jump'+(!focusKind?' on':'')+'" href="#blueprint">'+t('all')+'</a>'+Object.keys(D.kinds).map(function(k){var n=(D.blueprint[k]||[]).length;return n?'<a class="jump'+(focusKind===k?' on':'')+'" href="#blueprint/'+k+'">'+esc(D.kinds[k].plural)+' · '+n+'</a>':'';}).join('')+((D.blueprint.permissions||[]).length?'<a class="jump'+(focusKind==='permissions'?' on':'')+'" href="#blueprint/permissions">'+t('permMatrix')+'</a>':'')+(D.diagrams?'<a class="jump" href="#diagrams">'+t('allDiagrams')+'</a>':'')+'</div>';
+  if(!focusKind && D.diagrams) h += '<h2>'+t('sysContext')+'</h2>'+diagramBlock(t('whoWhat'), D.diagrams.context, t('containerNote'));
   if(!focusKind || focusKind==='permissions') h += matrix();
   Object.keys(D.kinds).forEach(function(k){
     if(focusKind && focusKind!=='permissions' && focusKind!==k) return;
@@ -400,16 +470,16 @@ function blueprint(focusKind, focusId){
       if(focusId && el.id!==focusId) return;
       var slots = D.kinds[k].slots;
       h += '<div class="card el"><h3>'+esc(el.name||el.id)+' <code>'+esc(el.id)+'</code>'+(el.assumption?pill('assumption'):'')+'</h3>';
-      h += '<div class="chips" style="margin:4px 0 8px">'+((el.derived_from||[]).length?'<span class="src">From idea: '+(el.derived_from||[]).map(ideaLink).join(', ')+'</span>':'<span class="pill p-assumption">no source idea</span>')+'</div>';
-      slots.filter(function(s){return s!=='name';}).forEach(function(s){var v=get(el,s);h+='<div class="slot"><span class="k">'+esc(s)+'</span>'+(filled(v)?'<span>'+fmt(v)+'</span>':'<span class="miss">Not defined</span>')+'</div>';});
+      h += '<div class="chips" style="margin:4px 0 8px">'+((el.derived_from||[]).length?'<span class="src">'+t('fromIdea')+(el.derived_from||[]).map(ideaLink).join(', ')+'</span>':'<span class="pill p-assumption">'+t('noSourceIdea')+'</span>')+'</div>';
+      slots.filter(function(s){return s!=='name';}).forEach(function(s){var v=get(el,s);h+='<div class="slot"><span class="k">'+esc(s)+'</span>'+(filled(v)?'<span>'+fmt(v)+'</span>':'<span class="miss">'+t('notDefined')+'</span>')+'</div>';});
       Object.keys(el).forEach(function(key){if(['id','name','derived_from','assumption'].indexOf(key)>=0)return;if(slots.some(function(s){return s===key||s.indexOf(key+'.')===0;}))return;h+='<div class="slot"><span class="k">'+esc(key)+'</span><span>'+fmt(el[key])+'</span></div>';});
       var sm = k==='entities' && D.diagrams && D.diagrams.states.filter(function(x){return x.id===el.id;})[0];
-      if(sm) h += '<div class="diagram" style="margin-top:10px"><p class="meta" style="margin:0 0 4px">States (red = unreachable)</p><pre class="mermaid">'+esc(sm.src)+'</pre></div>';
+      if(sm) h += '<div class="diagram" style="margin-top:10px"><p class="meta" style="margin:0 0 4px">'+t('statesRed')+'</p><pre class="mermaid">'+esc(sm.src)+'</pre></div>';
       h += '</div>';
     });
     h += '</div>';
   });
-  if(focusId) h = '<p class="back"><a href="#blueprint">← Whole blueprint</a></p>'+h;
+  if(focusId) h = '<p class="back"><a href="#blueprint">'+t('wholeBp')+'</a></p>'+h;
   return h;
 }
 function matrix(){
@@ -418,55 +488,55 @@ function matrix(){
   perms.forEach(function(p){if(actors.indexOf(p.actor)<0)actors.push(p.actor);});
   var cols = []; perms.forEach(function(p){var c=p.action+(p.entity?' '+p.entity:'');if(cols.indexOf(c)<0)cols.push(c);});
   var cell = {}; perms.forEach(function(p){var key=p.actor+'|'+p.action+(p.entity?' '+p.entity:'');if(cell[key]!==undefined && cell[key]!==p.allow)cell[key]='conflict';else cell[key]=p.allow;});
-  var h = '<h2 id="k-permissions">Permission matrix</h2><p class="meta">Who may do what. A red cell means two ideas disagree: that is a gap to resolve, not a typo.</p><div><table class="matrix"><thead><tr><th>Actor</th>'+cols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>';
-  actors.forEach(function(a){h+='<tr><td><strong>'+esc(a)+'</strong></td>'+cols.map(function(c){var v=cell[a+'|'+c];return v==='conflict'?'<td class="conflict">conflict</td>':v===true?'<td class="yes">✓</td>':v===false?'<td class="no">✗</td>':'<td class="meta">·</td>';}).join('')+'</tr>';});
+  var h = '<h2 id="k-permissions">'+t('permMatrix')+'</h2><p class="meta">'+t('matrixLede')+'</p><div><table class="matrix"><thead><tr><th>'+t('th_actor')+'</th>'+cols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>';
+  actors.forEach(function(a){h+='<tr><td><strong>'+esc(a)+'</strong></td>'+cols.map(function(c){var v=cell[a+'|'+c];return v==='conflict'?'<td class="conflict">'+t('conflict')+'</td>':v===true?'<td class="yes">✓</td>':v===false?'<td class="no">✗</td>':'<td class="meta">·</td>';}).join('')+'</tr>';});
   return h+'</tbody></table></div>';
 }
-function rng(a,b,u){var h=function(x){return Math.round(x*2)/2;};a=h(a);b=h(b);return (a===b?a:a+'–'+b)+(u?' '+u:'');}
-function fmtDate(iso){if(!iso)return '';var d=new Date(iso+'T00:00:00Z');return d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});}
+function rng(a,b,u){var h=function(x){return Math.round(x*2)/2;};a=h(a);b=h(b);return (a===b?num(a):num(a)+'–'+num(b))+(u?' '+u:'');}
+function fmtDate(iso){if(!iso)return '';var d=new Date(iso+'T00:00:00Z');return d.toLocaleDateString(T.locale||undefined,{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});}
 function timeline(){
   var E=D.estimate; if(!E||!E.phases.length) return '';
   var max=E.total.weeks[1]||1, c=E.calibration;
-  var h='<div class="card tl"><div class="tl-head"><div><div class="tl-v">'+rng(E.total.weeks[0],E.total.weeks[1],'weeks')+'</div><div class="meta">'+rng(E.total.low,E.total.high,'person-days')+(E.total.endDate?' · done between <strong>'+fmtDate(E.total.endDate[0])+'</strong> and <strong>'+fmtDate(E.total.endDate[1])+'</strong>':'')+'</div></div>'+
-    (c.samples?pill('calibrated on '+c.samples,'clear'):pill('not calibrated','draft'))+'</div>';
+  var h='<div class="card tl"><div class="tl-head"><div><div class="tl-v">'+rng(E.total.weeks[0],E.total.weeks[1],t('weeks'))+'</div><div class="meta">'+rng(E.total.low,E.total.high,t('personDays'))+(E.total.endDate?t('doneBetween',fmtDate(E.total.endDate[0]),fmtDate(E.total.endDate[1])):'')+'</div></div>'+
+    (c.samples?pill(t('calibratedOn',c.samples),'clear'):pill(t('notCalibrated'),'draft'))+'</div>';
   h+='<div class="gantt">'+E.phases.map(function(ph){
     var l=ph.startWeek[0]/max*100, w1=(ph.endWeek[0]-ph.startWeek[0])/max*100, w2=(ph.endWeek[1]-ph.startWeek[0])/max*100;
-    return '<div class="g-row"><div class="g-name">'+esc(ph.name)+'</div><div class="g-track"><span class="g-hi" style="left:'+l+'%;width:'+w2+'%"></span><span class="g-lo" style="left:'+l+'%;width:'+w1+'%"></span></div><div class="g-w">'+rng(ph.weeks[0],ph.weeks[1],'wk')+'</div></div>';}).join('')+'</div>';
-  h+='<div class="legend"><span><span class="dot" style="background:var(--accent)"></span>likely if nothing surprises us</span><span><span class="dot" style="background:var(--amber-soft);border:1px solid var(--amber)"></span>extra time the open questions could cost</span></div>';
-  h+='<p class="meta" style="margin:8px 0 0">'+c.team.people+' '+(c.team.people===1?'person':'people')+' × '+c.team.days_per_week+' days × '+Math.round(c.team.focus*100)+'% focus = '+rng(c.capacity,c.capacity)+' ideal days a week.'+(c.samples?' Scaled by '+c.factor.toFixed(2)+' from past milestones.':' Record actuals in <code>calibration.md</code> after each milestone so estimates learn.')+'</p></div>';
-  if(E.gapCost.length) h+='<h2>What open questions cost</h2><p class="lede">Answering these narrows the range. Biggest first.</p><table><thead><tr><th>Gap</th><th>Up to</th><th>Question</th></tr></thead><tbody>'+E.gapCost.map(function(g){return '<tr><td>'+gapLink(g.id)+'</td><td class="pillcell">'+pill('+'+g.days+' days',g.impact)+'</td><td>'+esc(g.question)+'</td></tr>';}).join('')+'</tbody></table>';
+    return '<div class="g-row"><div class="g-name">'+esc(ph.name)+'</div><div class="g-track"><span class="g-hi" style="left:'+l+'%;width:'+w2+'%"></span><span class="g-lo" style="left:'+l+'%;width:'+w1+'%"></span></div><div class="g-w">'+rng(ph.weeks[0],ph.weeks[1],t('wk'))+'</div></div>';}).join('')+'</div>';
+  h+='<div class="legend"><span><span class="dot" style="background:var(--accent)"></span>'+t('lgLikely')+'</span><span><span class="dot" style="background:var(--amber-soft);border:1px solid var(--amber)"></span>'+t('lgExtra')+'</span></div>';
+  h+='<p class="meta" style="margin:8px 0 0">'+num(c.team.people)+' '+(c.team.people===1?t('person'):t('people'))+' × '+t('daysX',num(c.team.days_per_week))+' × '+t('focusX',Math.round(c.team.focus*100)+'%')+t('idealDays',rng(c.capacity,c.capacity))+(c.samples?t('scaledBy',num(c.factor.toFixed(2))):t('recordActuals'))+'</p></div>';
+  if(E.gapCost.length) h+='<h2>'+t('h_cost')+'</h2><p class="lede">'+t('costLede')+'</p><table><thead><tr><th>'+t('th_gap')+'</th><th>'+t('th_upTo')+'</th><th>'+t('th_question')+'</th></tr></thead><tbody>'+E.gapCost.map(function(g){return '<tr><td>'+gapLink(g.id)+'</td><td class="pillcell">'+pill(t('plusDays',num(g.days)),g.impact)+'</td><td>'+esc(g.question)+'</td></tr>';}).join('')+'</tbody></table>';
   return h;
 }
 function workTable(ph){
   var E=D.estimate;
-  var rows=(ph.setup?[{name:'Project setup',kind:'setup',low:E.calibration.setup[0],high:E.calibration.setup[1],reasons:[]}]:[]).concat(ph.items);
-  return '<details class="fold"><summary>Work breakdown ('+rows.length+' items)</summary><table><thead><tr><th>Work</th><th>Kind</th><th>Days</th><th>Why it could take longer</th></tr></thead><tbody>'+rows.map(function(it){
+  var rows=(ph.setup?[{name:t('projectSetup'),kind:'setup',low:E.calibration.setup[0],high:E.calibration.setup[1],reasons:[]}]:[]).concat(ph.items);
+  return '<details class="fold"><summary>'+t('workBreakdown',rows.length)+'</summary><table><thead><tr><th>'+t('th_work')+'</th><th>'+t('th_kind')+'</th><th>'+t('th_days')+'</th><th>'+t('th_why')+'</th></tr></thead><tbody>'+rows.map(function(it){
     var link=it.kind==='setup'?esc(it.name):'<a href="#blueprint/'+it.kind+'/'+encodeURIComponent(it.id)+'">'+esc(it.name)+'</a>';
-    return '<tr><td>'+link+'</td><td>'+esc(it.kind==='setup'?'setup':D.kinds[it.kind].label.toLowerCase())+'</td><td>'+rng(it.low,it.high)+'</td><td>'+(it.reasons.length?'<span class="miss-t">'+esc(it.reasons.join('; '))+'</span>':'')+'</td></tr>';}).join('')+
-    '<tr><td>Testing, fixes, UAT</td><td>stabilize</td><td>+'+Math.round(E.calibration.stabilize[0]*100)+'–'+Math.round(E.calibration.stabilize[1]*100)+'%</td><td></td></tr></tbody></table></details>';
+    return '<tr><td>'+link+'</td><td>'+esc(it.kind==='setup'?t('setup'):D.kinds[it.kind].label.toLowerCase())+'</td><td>'+rng(it.low,it.high)+'</td><td>'+(it.reasons.length?'<span class="miss-t">'+esc(it.reasons.join('; '))+'</span>':'')+'</td></tr>';}).join('')+
+    '<tr><td>'+t('testing')+'</td><td>'+t('stabilize')+'</td><td>+'+Math.round(E.calibration.stabilize[0]*100)+'–'+Math.round(E.calibration.stabilize[1]*100)+'%</td><td></td></tr></tbody></table></details>';
 }
 function roadmap(){
-  var h = '<h1>Roadmap</h1><p class="lede">Phases in execution order, one per milestone. Sizes come from the blueprint; the range widens wherever the definition is still thin. A phase can move to OpenSpec only when its gate is clear.</p>';
-  if(!D.milestones.length && !D.estimate) return h+'<p class="empty">No ROADMAP.md yet. Run /openidea:plan.</p>';
+  var h = '<h1>'+t('roadmapTitle')+'</h1><p class="lede">'+t('roadmapLede')+'</p>';
+  if(!D.milestones.length && !D.estimate) return h+'<p class="empty">'+t('noRoadmap')+'</p>';
   h += timeline();
   var est={}; if(D.estimate) D.estimate.phases.forEach(function(ph){est[ph.id]=ph;});
-  if(D.milestones.length) h += '<h2>Phases</h2>';
+  if(D.milestones.length) h += '<h2>'+t('phases')+'</h2>';
   D.milestones.forEach(function(m,n){
     var ph=est[m.id];
-    h += '<div class="card" style="margin-bottom:12px"><h3 style="margin-top:0">'+(n+1)+'. '+esc(m.name)+' <code>'+esc(m.id)+'</code></h3><div class="chips">'+pill(m.status)+(m.blockingGaps.length?pill('gate blocked','blocked'):pill('gate clear','clear'))+(ph?pill(rng(ph.weeks[0],ph.weeks[1],'weeks'),'tag'):'')+'</div>';
-    if(ph) h += '<p class="meta">'+rng(ph.low,ph.high,'person-days')+(ph.endDate?' · ends '+fmtDate(ph.endDate[0])+' to '+fmtDate(ph.endDate[1]):' · ends in week '+rng(Math.ceil(ph.endWeek[0]),Math.ceil(ph.endWeek[1])))+'</p>';
-    if(m.approvedIn) h += '<p class="meta">Approved in '+esc(m.approvedIn)+'</p>';
-    h += '<table><thead><tr><th>Idea</th><th>Status</th><th>Category</th><th>Depends on</th></tr></thead><tbody>'+m.ideas.map(function(id){var i=ideaById[id];var d=i?i.data:{};return '<tr><td>'+ideaLink(id)+'</td><td>'+(d.status?pill(d.status):'')+'</td><td>'+esc(d.category||'')+'</td><td>'+((d.depends_on||[]).map(ideaLink).join(', '))+'</td></tr>';}).join('')+'</tbody></table>';
-    if(m.blockingGaps.length) h += '<p class="meta" style="margin-top:8px">Blocked by: '+m.blockingGaps.map(gapLink).join(', ')+'</p>';
+    h += '<div class="card" style="margin-bottom:12px"><h3 style="margin-top:0">'+(n+1)+'. '+esc(m.name)+' <code>'+esc(m.id)+'</code></h3><div class="chips">'+pill(m.status)+(m.blockingGaps.length?pill(t('gateBlocked'),'blocked'):pill(t('gateClear'),'clear'))+(ph?pill(rng(ph.weeks[0],ph.weeks[1],t('weeks')),'tag'):'')+'</div>';
+    if(ph) h += '<p class="meta">'+rng(ph.low,ph.high,t('personDays'))+(ph.endDate?t('endsRange',fmtDate(ph.endDate[0]),fmtDate(ph.endDate[1])):t('endsWeek',rng(Math.ceil(ph.endWeek[0]),Math.ceil(ph.endWeek[1]))))+'</p>';
+    if(m.approvedIn) h += '<p class="meta">'+esc(t('approvedIn',m.approvedIn))+'</p>';
+    h += '<table><thead><tr><th>'+t('th_idea')+'</th><th>'+t('th_status')+'</th><th>'+t('th_category')+'</th><th>'+t('th_depends')+'</th></tr></thead><tbody>'+m.ideas.map(function(id){var i=ideaById[id];var d=i?i.data:{};return '<tr><td>'+ideaLink(id)+'</td><td>'+(d.status?pill(d.status):'')+'</td><td>'+esc(d.category||'')+'</td><td>'+((d.depends_on||[]).map(ideaLink).join(', '))+'</td></tr>';}).join('')+'</tbody></table>';
+    if(m.blockingGaps.length) h += '<p class="meta" style="margin-top:8px">'+t('blockedBy')+m.blockingGaps.map(gapLink).join(', ')+'</p>';
     if(ph) h += workTable(ph);
     h += '</div>';
   });
-  if(D.estimate && D.estimate.unplanned.length) h += '<h2>Not in any milestone</h2><p class="lede">Defined in the blueprint but not planned yet, so not in the timeline.</p><table><thead><tr><th>Work</th><th>Kind</th><th>Days</th></tr></thead><tbody>'+D.estimate.unplanned.map(function(it){return '<tr><td><a href="#blueprint/'+it.kind+'/'+encodeURIComponent(it.id)+'">'+esc(it.name)+'</a></td><td>'+esc(D.kinds[it.kind].label.toLowerCase())+'</td><td>'+rng(it.low,it.high)+'</td></tr>';}).join('')+'</tbody></table>';
+  if(D.estimate && D.estimate.unplanned.length) h += '<h2>'+t('notInMilestone')+'</h2><p class="lede">'+t('notInMilestoneLede')+'</p><table><thead><tr><th>'+t('th_work')+'</th><th>'+t('th_kind')+'</th><th>'+t('th_days')+'</th></tr></thead><tbody>'+D.estimate.unplanned.map(function(it){return '<tr><td><a href="#blueprint/'+it.kind+'/'+encodeURIComponent(it.id)+'">'+esc(it.name)+'</a></td><td>'+esc(D.kinds[it.kind].label.toLowerCase())+'</td><td>'+rng(it.low,it.high)+'</td></tr>';}).join('')+'</tbody></table>';
   return h;
 }
 function issues(){
-  var h = '<p class="back"><a href="#overview">← Overview</a></p><h1>Checks</h1><p class="lede">Deterministic checks from <code>openidea validate</code>. Errors break a rule; warnings deserve a look.</p>';
-  if(!D.issues.length) return h+'<p class="empty">All checks pass.</p>';
+  var h = '<p class="back"><a href="#overview">'+t('backOverview')+'</a></p><h1>'+t('checksTitle')+'</h1><p class="lede">'+t('checksLede')+'</p>';
+  if(!D.issues.length) return h+'<p class="empty">'+t('allPass')+'</p>';
   var order={error:0,warning:1,info:2};
   return h+D.issues.slice().sort(function(a,b){return order[a.level]-order[b.level];}).map(function(i){return '<div class="issue">'+pill(i.level)+' <code>'+esc(i.code)+'</code> <span class="meta">'+esc(i.file)+'</span><div>'+esc(i.message)+'</div></div>';}).join('');
 }
@@ -486,41 +556,41 @@ function labelCells(root){
 }
 new MutationObserver(function(ms){ms.forEach(function(m){[].forEach.call(m.addedNodes,function(n){if(n.nodeType===1)labelCells(n.parentNode||n);});});}).observe(app,{childList:true,subtree:true});
 function features(){
-  var h = '<h1>Features</h1><p class="lede">One feature per flow in the blueprint: who uses it, on which screens, what done looks like, and what is still open or undefined.</p>';
-  if(!D.features.length) return h+'<p class="empty">No blueprint flows yet. Run /openidea:blueprint.</p>';
-  h += '<table><thead><tr><th>Feature</th><th>Actor</th><th>Status</th><th>Screens</th><th>Done looks like</th><th>Open gaps</th><th>Milestone</th><th>Not defined</th></tr></thead><tbody>';
+  var h = '<h1>'+t('featuresTitle')+'</h1><p class="lede">'+t('featuresLede')+'</p>';
+  if(!D.features.length) return h+'<p class="empty">'+t('noFlows')+'</p>';
+  h += '<table><thead><tr><th>'+t('th_feature')+'</th><th>'+t('th_actor')+'</th><th>'+t('th_status')+'</th><th>'+t('th_screens')+'</th><th>'+t('th_done')+'</th><th>'+t('th_openGaps')+'</th><th>'+t('th_milestone')+'</th><th>'+t('th_notDefined')+'</th></tr></thead><tbody>';
   D.features.forEach(function(f){
-    h += '<tr><td><a href="#feature/'+encodeURIComponent(f.id)+'">'+esc(f.name)+'</a>'+(f.assumption?' '+pill('assumption'):'')+'<div class="meta">from '+(f.ideas.map(ideaLink).join(', ')||'no idea')+'</div></td>'+
+    h += '<tr><td><a href="#feature/'+encodeURIComponent(f.id)+'">'+esc(f.name)+'</a>'+(f.assumption?' '+pill('assumption'):'')+'<div class="meta">'+t('fromX')+(f.ideas.map(ideaLink).join(', ')||t('noIdea'))+'</div></td>'+
       '<td>'+esc(f.actor||'')+'</td><td>'+f.statuses.map(function(x){return pill(x);}).join(' ')+'</td><td>'+esc(f.screens.join(', '))+'</td><td>'+esc(f.done.join(' / '))+'</td>'+
       '<td>'+f.gaps.map(gapLink).join(', ')+'</td><td>'+esc(f.milestones.join(', '))+'</td><td>'+(f.missing.length?'<span class="miss-t">'+esc(f.missing.join(', '))+'</span>':'')+'</td></tr>';
   });
   return h+'</tbody></table>';
 }
 function feature(id){
-  var f = D.features.filter(function(x){return x.id===id;})[0]; if(!f) return '<p>Feature not found.</p>';
-  var h = '<p class="back"><a href="#features">← Features</a></p><h1>'+esc(f.name)+'</h1><div class="chips">'+f.statuses.map(function(x){return pill(x);}).join('')+(f.assumption?pill('assumption'):'')+(f.milestones.length?pill(f.milestones.join(', '),'tag'):'')+'</div>';
-  var rows = [['Who',esc(f.actor||'')],['From ideas',f.ideas.map(ideaLink).join(', ')],['Screens',esc(f.screens.join(', '))],['Permissions',esc(f.permissions.join(', '))],['Done looks like',esc(f.done.join(' / '))]];
-  h += '<div class="card" style="margin-top:12px">'+rows.map(function(r){return '<div class="slot"><span class="k">'+r[0]+'</span>'+(r[1]?'<span>'+r[1]+'</span>':'<span class="miss">Not defined</span>')+'</div>';}).join('')+
-    (f.missing.length?'<div class="slot"><span class="k">Not defined yet</span><span class="miss">'+esc(f.missing.join(', '))+'</span></div>':'')+'</div>';
-  if(f.gaps.length) h += '<h2>Open gaps</h2>'+queueCards(f.gaps, true);
+  var f = D.features.filter(function(x){return x.id===id;})[0]; if(!f) return '<p>'+t('featureNotFound')+'</p>';
+  var h = '<p class="back"><a href="#features">'+t('backFeatures')+'</a></p><h1>'+esc(f.name)+'</h1><div class="chips">'+f.statuses.map(function(x){return pill(x);}).join('')+(f.assumption?pill('assumption'):'')+(f.milestones.length?pill(f.milestones.join(', '),'tag'):'')+'</div>';
+  var rows = [[t('r_who'),esc(f.actor||'')],[t('r_from'),f.ideas.map(ideaLink).join(', ')],[t('th_screens'),esc(f.screens.join(', '))],[t('r_perms'),esc(f.permissions.join(', '))],[t('th_done'),esc(f.done.join(' / '))]];
+  h += '<div class="card" style="margin-top:12px">'+rows.map(function(r){return '<div class="slot"><span class="k">'+r[0]+'</span>'+(r[1]?'<span>'+r[1]+'</span>':'<span class="miss">'+t('notDefined')+'</span>')+'</div>';}).join('')+
+    (f.missing.length?'<div class="slot"><span class="k">'+t('notDefinedYet')+'</span><span class="miss">'+esc(f.missing.join(', '))+'</span></div>':'')+'</div>';
+  if(f.gaps.length) h += '<h2>'+t('h_openGaps')+'</h2>'+queueCards(f.gaps, true);
   var a = D.diagrams && D.diagrams.activity.filter(function(x){return x.id===id;})[0];
-  if(a) h += '<h2>Activity</h2>'+diagramBlock(a.name, a.src, 'Red steps or branches are not defined yet.');
-  h += '<p class="meta"><a href="#blueprint/flows/'+encodeURIComponent(id)+'">See the raw blueprint flow</a></p>';
+  if(a) h += '<h2>'+t('activity')+'</h2>'+diagramBlock(a.name, a.src, t('redSteps'));
+  h += '<p class="meta"><a href="#blueprint/flows/'+encodeURIComponent(id)+'">'+t('rawFlow')+'</a></p>';
   return h;
 }
 function diagramBlock(title, src, sub){
   return '<div class="card diagram"><h3 style="margin-top:0">'+esc(title)+'</h3>'+(sub?'<p class="meta">'+sub+'</p>':'')+'<pre class="mermaid">'+esc(src)+'</pre></div>';
 }
 function diagrams(focus){
-  var h = '<p class="back"><a href="#blueprint">← Blueprint</a></p><h1>Diagrams</h1><p class="lede">Generated from the blueprint by code, never drawn by hand. Red nodes are steps, branches, or states nobody has defined yet: each is a blind spot to resolve.</p>';
-  if(!D.diagrams) return h+'<p class="empty">No blueprint yet. Run /openidea:blueprint.</p>';
-  h += '<div class="toc"><a class="jump'+(!focus?' on':'')+'" href="#diagrams">All</a><a class="jump'+(focus==='context'?' on':'')+'" href="#diagrams/context">System context</a>'+D.diagrams.activity.map(function(a){return '<a class="jump'+(focus===a.id?' on':'')+'" href="#diagrams/'+encodeURIComponent(a.id)+'">'+esc(a.name)+'</a>';}).join('')+D.diagrams.states.map(function(a){return '<a class="jump'+(focus==='state-'+a.id?' on':'')+'" href="#diagrams/state-'+encodeURIComponent(a.id)+'">'+esc(a.name)+' states</a>';}).join('')+'</div>';
-  if(!focus || focus==='context') h += '<h2>System context</h2>'+diagramBlock('Who and what the system talks to', D.diagrams.context, 'Actors on the left, external systems with the direction of data. Container architecture is a design decision and belongs in the OpenSpec design, not here.');
+  var h = '<p class="back"><a href="#blueprint">'+t('backBp')+'</a></p><h1>'+t('diagramsTitle')+'</h1><p class="lede">'+t('diagramsLede')+'</p>';
+  if(!D.diagrams) return h+'<p class="empty">'+t('noBpShort')+'</p>';
+  h += '<div class="toc"><a class="jump'+(!focus?' on':'')+'" href="#diagrams">'+t('all')+'</a><a class="jump'+(focus==='context'?' on':'')+'" href="#diagrams/context">'+t('sysContext')+'</a>'+D.diagrams.activity.map(function(a){return '<a class="jump'+(focus===a.id?' on':'')+'" href="#diagrams/'+encodeURIComponent(a.id)+'">'+esc(a.name)+'</a>';}).join('')+D.diagrams.states.map(function(a){return '<a class="jump'+(focus==='state-'+a.id?' on':'')+'" href="#diagrams/state-'+encodeURIComponent(a.id)+'">'+esc(t('statesOf',a.name))+'</a>';}).join('')+'</div>';
+  if(!focus || focus==='context') h += '<h2>'+t('sysContext')+'</h2>'+diagramBlock(t('whoWhat'), D.diagrams.context, t('contextNote'));
   var acts = D.diagrams.activity.filter(function(a){return !focus||focus===a.id;});
-  if(acts.length) h += '<h2>Activity per flow</h2>'+acts.map(function(a){return diagramBlock(a.name, a.src);}).join('');
+  if(acts.length) h += '<h2>'+t('activityPerFlow')+'</h2>'+acts.map(function(a){return diagramBlock(a.name, a.src);}).join('');
   var sts = D.diagrams.states.filter(function(a){return !focus||focus==='state-'+a.id;});
-  if(sts.length) h += '<h2>State machines</h2>'+sts.map(function(a){return diagramBlock(a.name, a.src, 'Red states can never be reached.');}).join('');
-  if(!focus && !D.diagrams.states.length) h += '<h2>State machines</h2><p class="empty">No entity defines states yet. Entities with a status attribute should.</p>';
+  if(sts.length) h += '<h2>'+t('stateMachines')+'</h2>'+sts.map(function(a){return diagramBlock(a.name, a.src, t('redUnreachable'));}).join('');
+  if(!focus && !D.diagrams.states.length) h += '<h2>'+t('stateMachines')+'</h2><p class="empty">'+t('noStates')+'</p>';
   return h;
 }
 var mermaidState = 'idle';
@@ -535,7 +605,7 @@ function drawMermaid(){
   sc.onerror=function(){ mermaidState='failed'; offline(app.querySelectorAll('pre.mermaid')); };
   document.head.appendChild(sc);
 }
-function offline(nodes){ [].forEach.call(nodes,function(n){ if(n.previousElementSibling&&n.previousElementSibling.className==='offline-note')return; var p=document.createElement('p'); p.className='offline-note'; p.textContent='Offline: the diagram library could not load, so the Mermaid source is shown. It renders on GitHub in blueprint/diagrams.md.'; n.parentNode.insertBefore(p,n); n.classList.add('src'); }); }
+function offline(nodes){ [].forEach.call(nodes,function(n){ if(n.previousElementSibling&&n.previousElementSibling.className==='offline-note')return; var p=document.createElement('p'); p.className='offline-note'; p.textContent=t('offline'); n.parentNode.insertBefore(p,n); n.classList.add('src'); }); }
 function route(){
   var parts = (location.hash.replace(/^#/,'')||'overview').split('/').map(decodeURIComponent);
   var page = parts[0], html;

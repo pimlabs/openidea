@@ -21,8 +21,9 @@ const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 export function isFilled(v) {
   if (v === null || v === undefined) return false;
-  if (Array.isArray(v)) return v.length > 0;
-  if (typeof v === 'string') return v.trim() !== '' && v.trim().toUpperCase() !== 'TBD';
+  // A list counts only when every item is filled: ["Phone offline: TBD"] still leaves a case undefined.
+  if (Array.isArray(v)) return v.length > 0 && v.every(isFilled);
+  if (typeof v === 'string') { const t = v.trim().toUpperCase(); return t !== '' && t !== 'TBD' && !/(?:[:\-–]\s*|\()TBD\)?\.?$/.test(t); }
   return true;
 }
 

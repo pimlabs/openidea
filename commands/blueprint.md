@@ -10,6 +10,8 @@ Arguments from the user (optional, e.g. limit to certain ideas or a category): $
 
 `openidea/BRIEF.md` exists and at least 1 idea is `captured` or `ready`. If not, stop and point the user to `/openidea:init` or `/openidea:capture`.
 
+Write every piece of prose in the project language (`language:` in `openidea/BRIEF.md`, default `en`); keep ids, frontmatter keys, enum values and section headings as the schema defines them (skill section 6, Language).
+
 ## Process
 
 1. Read `BRIEF.md`, every active idea (`captured`, `ready`, `parked` only for context), resolved and `accepted_risk` gaps (their resolutions are now facts), and the existing `blueprint/blueprint.json` if any. Reuse existing element ids wherever the meaning is unchanged, so links and comments stay stable.

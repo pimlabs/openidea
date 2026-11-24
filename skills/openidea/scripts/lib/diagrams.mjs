@@ -92,8 +92,17 @@ export function features(p, openGapList) {
     const ideas = listOf(f.derived_from);
     const screens = (bp.screens || []).filter((s) => (s.flows || []).includes(f.id)).map((s) => s.name || s.id);
     const perms = (bp.permissions || []).filter((pm) => pm.actor === f.actor).map((pm) => `${pm.allow ? '' : 'not '}${pm.action}${pm.entity ? ' ' + pm.entity : ''}`);
-    const done = ideas.map((id) => doneLooksLike(ideaById.get(id)?.body)).filter(isFilled);
-    const gaps = openGapList.filter((g) => (g.data.ideas || []).some((id) => ideas.includes(id))).map((g) => g.data.id);
+    // Done = the flow's own acceptance line (done, else its success scenario); the ideas' line only as a fallback,
+    // so features from one idea do not all repeat the same sentence.
+    const own = [f.done, f.scenarios?.success].find(isFilled);
+    const done = own ? [own] : ideas.map((id) => doneLooksLike(ideaById.get(id)?.body)).filter(isFilled);
+    // A gap touches this feature through its `affects` (the flow or one of its screens) when it has one, else through shared ideas.
+    const screenIds = (bp.screens || []).filter((s) => (s.flows || []).includes(f.id)).map((s) => `screens/${s.id}`);
+    const gaps = openGapList.filter((g) => {
+      const aff = listOf(g.data.affects);
+      if (aff.length) return aff.includes(`flows/${f.id}`) || aff.some((x) => screenIds.includes(x));
+      return (g.data.ideas || []).some((id) => ideas.includes(id));
+    }).map((g) => g.data.id);
     const statuses = [...new Set(ideas.map((id) => ideaById.get(id)?.data.status).filter(Boolean))];
     const milestones = [...new Set(ideas.map((id) => milestoneOf.get(id)).filter(Boolean))];
     const sc = f.scenarios || {};

@@ -4,7 +4,7 @@ description: Produce the finished, client-ready report (executive summary, decis
 
 Load the `openidea` skill (Skill tool) to read sections 3.13 (report) and 6 (client safety) before proceeding.
 
-Arguments from the user (optional): the format, `md`, `pptx` or `pdf` (default `md`); several are fine (`pptx pdf`). $ARGUMENTS
+Arguments from the user (optional): the format, `md`, `pptx` or `pdf` (default `md`), several are fine (`pptx pdf`); and the language, `en` or `id` (default: `language:` in `BRIEF.md`, else `en`). $ARGUMENTS
 
 ## Prerequisite
 
@@ -13,7 +13,7 @@ Arguments from the user (optional): the format, `md`, `pptx` or `pdf` (default `
 ## Process
 
 1. Run `openidea validate`. If it reports errors, list them and ask whether to fix them first: a report built on broken files misleads a client.
-2. For each requested format run `openidea report --format <format>`.
+2. For each requested format run `openidea report --format <format>` (add `--lang <code>` when the user named a language).
 3. Reply with the file path(s) and the report's headline sentence, which already carries the numbers (features, phases, likely date, open decisions).
 
 The report is a renderer, so its content comes only from the files. Never edit the generated report to change a fact: change the idea, gap, blueprint, roadmap or calibration and regenerate. Wording or styling changes a person makes afterwards in PowerPoint are theirs; tell them a regeneration overwrites `openidea/reports/report.<format>`, so they should save edited copies under another name.

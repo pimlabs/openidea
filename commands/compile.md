@@ -10,6 +10,8 @@ Arguments from the user (optional, scope to a specific milestone): $ARGUMENTS
 
 There must be a `ready` idea already in `openidea/ROADMAP.md`. If not, stop and point the user to `/openidea:plan` first.
 
+Write every piece of prose in the project language (`language:` in `openidea/BRIEF.md`, default `en`); keep ids, frontmatter keys, enum values and section headings as the schema defines them (skill section 6, Language).
+
 ## Process
 
 1. Determine scope: if $ARGUMENTS scopes to a specific milestone, use that. Otherwise, ask the user or pull in every milestone in ROADMAP.

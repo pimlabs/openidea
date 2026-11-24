@@ -10,6 +10,8 @@ Arguments from the user (optional, e.g. scope to a specific category, or bulk ca
 
 At least 1 idea with status `captured`. If none, stop and say there's nothing to evaluate.
 
+Write every piece of prose in the project language (`language:` in `openidea/BRIEF.md`, default `en`); keep ids, frontmatter keys, enum values and section headings as the schema defines them (skill section 6, Language).
+
 ## Process
 
 1. Run `openidea validate` (section 9) first and keep its structural findings (cycles, broken references, permission conflicts) as input. A direct dependency **cycle** is **blocking**: stop and ask the user to fix it first. A broken `depends_on` reference is advisory.

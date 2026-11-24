@@ -16,7 +16,7 @@ No hard prerequisite. But first check whether `openidea/BRIEF.md` already exists
 2. If `openidea/BRIEF.md` **already exists**:
    - A small revision (add/change one section) → edit directly, no archiving needed.
    - A full rewrite → **must** confirm with the user first. Once confirmed, copy the old content to `openidea/discovery/brief-v{N}-superseded.md` (N = increment from the last superseded version) before overwriting `BRIEF.md`.
-3. Write the frontmatter: `schema_version: 2`, `project_status: active`. Start the body with `# <Project name>` (the dashboard uses it). On an existing version 1 brief, leave `schema_version` alone unless the user agrees to upgrade (upgrading means adding `**ID**` lines to `ROADMAP.md`).
+3. Write the frontmatter: `schema_version: 2`, `project_status: active`, `language: <en|id>`. Take the language from the user's story or ask once if unclear; it is the language of every output and every file Claude writes from here on (section 6, Language). Write the BRIEF body in it. Start the body with `# <Project name>` (the dashboard uses it). On an existing version 1 brief, leave `schema_version` alone unless the user agrees to upgrade (upgrading means adding `**ID**` lines to `ROADMAP.md`).
 4. Don't make up details the user didn't mention — ask back if there's an important gap (e.g. unclear target users).
 
 ## Output

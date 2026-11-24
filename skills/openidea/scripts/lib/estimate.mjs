@@ -19,6 +19,7 @@ export const DEFAULT_COEFFICIENTS = {
   integration: [3, 6],
   integration_both_ways: [1.5, 3],
   nfr: [1, 3],
+  rule: [0.5, 1.5],         // one business rule: a calculation, policy or validation (e.g. a commission tier), built and tested
   stabilize: [0.15, 0.25],  // share of a phase spent on testing, fixes, UAT
 };
 // Extra width on the high end, per cause.
@@ -52,6 +53,8 @@ function baseSize(kind, el, coef) {
   if (kind === 'screens') { s = add(s, coef.screen); s = add(s, coef.screen_element, list(el.elements).length); }
   if (kind === 'integrations') { s = add(s, coef.integration); if (el.direction === 'both') s = add(s, coef.integration_both_ways); }
   if (kind === 'nfr') s = add(s, coef.nfr);
+  // Business rules cost on their own: a payroll with 30 rules is not one entity and two screens.
+  if (kind === 'entities' || kind === 'flows') s = add(s, coef.rule, list(el.rules).length);
   return s;
 }
 
@@ -83,6 +86,8 @@ export function estimate(p) {
       const reasons = [];
       let widen = 0;
       if (missing.length) { widen += missing.length * UNCERTAINTY.missing_slot; reasons.push(`${missing.length} undefined: ${missing.join(', ')}`); }
+      const vague = list(el.rules).filter((r) => !isFilled(r)).length;
+      if (vague) { widen += vague * UNCERTAINTY.missing_slot; reasons.push(`${vague} rule${vague === 1 ? '' : 's'} not defined yet`); }
       if (el.assumption === true) { widen += UNCERTAINTY.assumption; reasons.push('assumption, no idea states it'); }
       for (const g of gaps) { widen += UNCERTAINTY.gap[g.data.impact] || 0; reasons.push(`open gap ${g.data.id} (${g.data.impact})`); }
       const [l, h] = baseSize(kind, el, cal.coef);
