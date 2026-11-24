@@ -47,24 +47,25 @@ const TEMPLATE = String.raw`<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OpenIdea Dashboard</title>
 <style>
 :root{--bg:#fbfbfa;--surface:#fff;--sunk:#f3f4f2;--border:#e4e5e1;--text:#1b1d1a;--muted:#5d625a;--dim:#8b9087;--accent:#2f6b55;--accent-soft:#e4f0ea;--red:#b3261e;--red-soft:#fbe9e7;--amber:#8a5a00;--amber-soft:#fdf1d8;--green:#1f7a4c;--green-soft:#e3f4ea;--blue:#2457a6;--blue-soft:#e6eefb}
 @media (prefers-color-scheme:dark){:root{--bg:#121412;--surface:#191c19;--sunk:#202420;--border:#2c312c;--text:#e9ece7;--muted:#a7ada4;--dim:#737a70;--accent:#6fc3a0;--accent-soft:#1c2e26;--red:#ff8a80;--red-soft:#33191a;--amber:#f0c060;--amber-soft:#2e2615;--green:#6fd3a0;--green-soft:#17291f;--blue:#8db4f5;--blue-soft:#18233a}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;overflow-wrap:anywhere;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--sunk);padding:1px 5px;border-radius:4px}
 header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--border)}
-.bar{max-width:1180px;margin:0 auto;padding:12px 20px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.bar{max-width:1180px;margin:0 auto;padding:12px max(20px,env(safe-area-inset-right)) 12px max(20px,env(safe-area-inset-left));display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .brand{font-weight:700}.brand small{color:var(--dim);font-weight:500;margin-left:6px}
 nav{display:flex;gap:4px;flex-wrap:wrap}
 nav a{color:var(--muted);padding:6px 10px;border-radius:7px;font-size:14px}
 nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}nav a:hover{text-decoration:none;color:var(--text)}
 .mode{margin-left:auto;font-size:12px;padding:3px 9px;border-radius:99px;background:var(--sunk);color:var(--muted)}
 .mode.client{background:var(--blue-soft);color:var(--blue)}
-main{max-width:1180px;margin:0 auto;padding:24px 20px 80px}
+main{max-width:1180px;margin:0 auto;padding:24px max(20px,env(safe-area-inset-right)) calc(80px + env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
 h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}h2{font-size:17px;margin:28px 0 10px}h3{font-size:15px;margin:18px 0 6px}
 .lede{color:var(--muted);margin:0 0 20px;max-width:760px}
 .grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
@@ -90,7 +91,7 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:var(--sunk)}
 input,select{font:inherit;font-size:14px;padding:6px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text)}
 button{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);cursor:pointer}
 button:hover{border-color:var(--accent);color:var(--accent)}
-.md p{margin:0 0 10px}.md ul,.md ol{margin:0 0 10px;padding-left:22px}.md h1,.md h2,.md h3,.md h4{margin:16px 0 6px}.md pre{background:var(--sunk);padding:10px;border-radius:8px;overflow:auto}
+.md p{margin:0 0 10px}.md ul,.md ol{margin:0 0 10px;padding-left:22px}.md h1,.md h2,.md h3,.md h4{margin:16px 0 6px}.md pre{background:var(--sunk);padding:10px;border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere}
 .md table{margin:6px 0 12px}
 .bar-status{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--sunk);margin:8px 0}
 .bar-status span{display:block;height:100%}
@@ -106,7 +107,30 @@ button:hover{border-color:var(--accent);color:var(--accent)}
 .toc{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .depth{height:8px;background:var(--sunk);border-radius:99px;overflow:hidden;margin-top:8px}.depth span{display:block;height:100%;background:var(--accent)}
 .back{font-size:13px}
-@media (max-width:640px){.slot{grid-template-columns:1fr}.mode{margin-left:0}}
+@media (max-width:640px){
+header{position:static}
+.bar{gap:8px;padding-top:max(10px,env(safe-area-inset-top))}
+.mode{margin-left:auto}
+nav{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+nav a{text-align:center;padding:8px 4px;background:var(--sunk);font-size:13px}
+main{padding-top:16px}
+h1{font-size:21px}
+.slot{grid-template-columns:1fr;gap:0}
+input,select,button{font-size:16px}
+.filters input,.filters select{flex:1 1 100%}
+table,thead,tbody,tr,th,td{display:block;width:100%}
+table{border:0;background:none}
+thead{display:none}
+tbody tr{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;padding:6px 12px}
+tbody tr:hover{background:var(--surface)}
+td{border:0;padding:5px 0;display:grid;grid-template-columns:38% 1fr;gap:8px;align-items:start}
+td>*{justify-self:start}
+td::before{content:attr(data-label);color:var(--muted);font-size:12.5px;font-weight:600}
+td:not([data-label])::before,td[data-label=""]::before{content:none}
+td:not([data-label]),td[data-label=""]{grid-template-columns:1fr}
+.matrix td,.matrix th{text-align:left}
+.stat .v{font-size:24px}
+}
 </style>
 </head>
 <body>
@@ -301,7 +325,7 @@ function matrix(){
   perms.forEach(function(p){if(actors.indexOf(p.actor)<0)actors.push(p.actor);});
   var cols = []; perms.forEach(function(p){var c=p.action+(p.entity?' '+p.entity:'');if(cols.indexOf(c)<0)cols.push(c);});
   var cell = {}; perms.forEach(function(p){var key=p.actor+'|'+p.action+(p.entity?' '+p.entity:'');if(cell[key]!==undefined && cell[key]!==p.allow)cell[key]='conflict';else cell[key]=p.allow;});
-  var h = '<h2 id="k-permissions">Permission matrix</h2><p class="meta">Who may do what. A red cell means two ideas disagree: that is a gap to resolve, not a typo.</p><div style="overflow:auto"><table class="matrix"><thead><tr><th>Actor</th>'+cols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>';
+  var h = '<h2 id="k-permissions">Permission matrix</h2><p class="meta">Who may do what. A red cell means two ideas disagree: that is a gap to resolve, not a typo.</p><div><table class="matrix"><thead><tr><th>Actor</th>'+cols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>';
   actors.forEach(function(a){h+='<tr><td><strong>'+esc(a)+'</strong></td>'+cols.map(function(c){var v=cell[a+'|'+c];return v==='conflict'?'<td class="conflict">conflict</td>':v===true?'<td class="yes">✓</td>':v===false?'<td class="no">✗</td>':'<td class="meta">·</td>';}).join('')+'</tr>';});
   return h+'</tbody></table></div>';
 }
@@ -323,6 +347,13 @@ function issues(){
   var order={error:0,warning:1,info:2};
   return h+D.issues.slice().sort(function(a,b){return order[a.level]-order[b.level];}).map(function(i){return '<div class="issue">'+pill(i.level)+' <code>'+esc(i.code)+'</code> <span class="meta">'+esc(i.file)+'</span><div>'+esc(i.message)+'</div></div>';}).join('');
 }
+function labelCells(root){
+  root.querySelectorAll('table').forEach(function(t){
+    var heads = [].map.call(t.querySelectorAll('thead th'), function(th){return th.textContent.trim();});
+    t.querySelectorAll('tbody tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i]!==undefined)td.setAttribute('data-label',heads[i]);});});
+  });
+}
+new MutationObserver(function(ms){ms.forEach(function(m){[].forEach.call(m.addedNodes,function(n){if(n.nodeType===1)labelCells(n.parentNode||n);});});}).observe(app,{childList:true,subtree:true});
 function route(){
   var parts = (location.hash.replace(/^#/,'')||'overview').split('/').map(decodeURIComponent);
   var page = parts[0], html;
@@ -330,7 +361,7 @@ function route(){
   else if(page==='blueprint') html=blueprint(parts[1],parts[2]); else if(page==='roadmap') html=roadmap(); else if(page==='issues'&&!CLIENT) html=issues(); else {page='overview';html=overview();}
   var navKey = {gap:'queue',idea:'ideas'}[page]||page;
   document.getElementById('nav').innerHTML = PAGES.map(function(p){return '<a href="#'+p[0]+'"'+(p[0]===navKey?' class="on"':'')+'>'+p[1]+'</a>';}).join('');
-  app.innerHTML = html; window.scrollTo(0,0);
+  app.innerHTML = html; labelCells(app); window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route); route();
 })();
