@@ -25,7 +25,7 @@ Arguments from the user (optional, e.g. limit to certain ideas or a category): $
    - each active feature idea that produced no element (`idea-not-in-blueprint`),
    - each unreachable state or untriggered transition that changes what gets built (`state-unreachable`, `transition-no-flow`).
    Check `openidea/gaps/` first and update an existing gap instead of creating a duplicate. Fill all four body sections, including a concrete proposed validation (section 10.3).
-8. Run `openidea diagrams`, `openidea index`, and `openidea dashboard`.
+8. Run `openidea diagrams`, `openidea index`, `openidea estimate` (if `ROADMAP.md` exists), `openidea prototype`, and `openidea dashboard`.
 
 ## Output
 

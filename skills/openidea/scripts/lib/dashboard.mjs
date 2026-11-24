@@ -3,6 +3,7 @@
 import { analyze } from './analyze.mjs';
 import { BLUEPRINT_KINDS, depthReport } from './validate.mjs';
 import { features, contextDiagram, activityDiagram, stateDiagram } from './diagrams.mjs';
+import { estimate } from './estimate.mjs';
 
 function payload(p, issues, mode) {
   const client = mode === 'client';
@@ -30,9 +31,17 @@ function payload(p, issues, mode) {
     states: (bp.entities || []).map((e) => ({ id: e.id, name: e.name || e.id, src: stateDiagram(e) })).filter((x) => x.src),
   } : null;
   const featureList = features(p, a.open).map((f) => ({ ...f, ideas: f.ideas.filter((id) => !client || visibleIdeas.has(id)) }));
+  const est = estimate(p);
   return {
     mode,
     project,
+    estimate: est && {
+      total: est.total, gapCost: est.gapCost,
+      calibration: { team: est.calibration.team, capacity: est.calibration.capacity, factor: est.calibration.factor, samples: est.calibration.samples, start: est.calibration.start, present: est.calibration.present, setup: est.calibration.coef.setup, stabilize: est.calibration.coef.stabilize },
+      phases: est.phases.map((ph) => ({ id: ph.id, name: ph.name, low: ph.low, high: ph.high, weeks: ph.weeks, startWeek: ph.startWeek, endWeek: ph.endWeek, endDate: ph.endDate || null, setup: ph.setup,
+        items: ph.items.map((it) => ({ kind: it.kind, id: it.id, name: it.name, low: it.low, high: it.high, reasons: it.reasons })) })),
+      unplanned: est.unplanned.map((it) => ({ kind: it.kind, id: it.id, name: it.name, low: it.low, high: it.high })),
+    },
     diagrams,
     features: featureList,
     brief,
@@ -149,6 +158,11 @@ pre.mermaid{margin:0;background:none;text-align:center;white-space:pre-wrap;over
 pre.mermaid svg{max-width:100%;height:auto}
 pre.mermaid.src{text-align:left;white-space:pre-wrap;font:12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--sunk);padding:10px;border-radius:8px;color:var(--muted)}
 .offline-note{font-size:12.5px;color:var(--amber)}
+.tl-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.tl-v{font-size:26px;font-weight:700;line-height:1.2}
+.gantt{margin:14px 0 8px;display:grid;gap:8px}.g-row{display:grid;grid-template-columns:minmax(90px,180px) 1fr auto;gap:10px;align-items:center;font-size:13.5px}
+.g-track{position:relative;height:14px;background:var(--sunk);border-radius:99px}.g-track span{position:absolute;top:0;bottom:0;border-radius:99px}
+.g-hi{background:var(--amber-soft);border:1px solid var(--amber)}.g-lo{background:var(--accent)}.g-w{color:var(--muted);white-space:nowrap}
+.stat .v small{font-size:14px;font-weight:600;color:var(--muted)}
 .miss-t{color:var(--red);font-weight:600;font-size:13px}
 @media (max-width:640px){
 header{position:static}
@@ -187,6 +201,7 @@ td.emptycell{display:none}
 .matrix td,.matrix th{text-align:left}
 .jump,button{min-height:40px}
 .g4{grid-template-columns:1fr 1fr;gap:8px}.stat.primary{grid-column:1/-1}.stat .s{display:none}.stat.primary .s{display:block}.stat .depth{margin-top:6px}
+.g-row{grid-template-columns:1fr auto;gap:4px 10px}.g-name{grid-column:1/-1;font-weight:600}.tl-v{font-size:22px}
 .stat.primary .v{font-size:34px}
 .stat .v{font-size:24px}
 }
@@ -277,6 +292,7 @@ function overview(){
   h += '<div class="card stat" data-href="ideas" tabindex="0"><div class="v">'+ready+' / '+(ready+cap)+'</div><div class="k">Ideas ready</div><div class="s">'+cap+' still captured</div></div>';
   h += '<div class="card stat '+(depthPct==null?'':depthPct<60?'bad':depthPct<85?'warn':'good')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+(depthPct==null?'–':depthPct+'%')+'</div><div class="k">Blueprint depth</div><div class="s">'+(D.depth?D.depth.filled+'/'+D.depth.total+' mandatory slots':'No blueprint yet')+'</div>'+(depthPct==null?'':'<div class="depth"><span style="width:'+depthPct+'%;background:'+(depthPct>=85?'var(--green)':depthPct>=60?'var(--amber)':'var(--red)')+'"></span></div>')+'</div>';
   h += '<div class="card stat '+(D.assumptions?'warn':'')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+D.assumptions+'</div><div class="k">Hidden assumptions</div><div class="s">Blueprint elements with no source idea</div></div>';
+  if(D.estimate) h += '<div class="card stat" data-href="roadmap" tabindex="0"><div class="v">'+rng(D.estimate.total.weeks[0],D.estimate.total.weeks[1])+'<small> wk</small></div><div class="k">Estimated timeline</div><div class="s">'+(D.estimate.total.endDate?'Done '+fmtDate(D.estimate.total.endDate[0])+' to '+fmtDate(D.estimate.total.endDate[1]):rng(D.estimate.total.low,D.estimate.total.high,'person-days'))+'</div></div>';
   if(!CLIENT) h += '<div class="card stat '+(c.errors?'bad':'good')+'" data-href="issues" tabindex="0"><div class="v">'+c.errors+'</div><div class="k">Check errors</div><div class="s">'+c.warnings+' warnings</div></div>';
   h += '</div>';
   h += '<h2 id="decide">Decide next</h2>'+queueCards(D.queue);
@@ -406,16 +422,46 @@ function matrix(){
   actors.forEach(function(a){h+='<tr><td><strong>'+esc(a)+'</strong></td>'+cols.map(function(c){var v=cell[a+'|'+c];return v==='conflict'?'<td class="conflict">conflict</td>':v===true?'<td class="yes">✓</td>':v===false?'<td class="no">✗</td>':'<td class="meta">·</td>';}).join('')+'</tr>';});
   return h+'</tbody></table></div>';
 }
+function rng(a,b,u){var h=function(x){return Math.round(x*2)/2;};a=h(a);b=h(b);return (a===b?a:a+'–'+b)+(u?' '+u:'');}
+function fmtDate(iso){if(!iso)return '';var d=new Date(iso+'T00:00:00Z');return d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});}
+function timeline(){
+  var E=D.estimate; if(!E||!E.phases.length) return '';
+  var max=E.total.weeks[1]||1, c=E.calibration;
+  var h='<div class="card tl"><div class="tl-head"><div><div class="tl-v">'+rng(E.total.weeks[0],E.total.weeks[1],'weeks')+'</div><div class="meta">'+rng(E.total.low,E.total.high,'person-days')+(E.total.endDate?' · done between <strong>'+fmtDate(E.total.endDate[0])+'</strong> and <strong>'+fmtDate(E.total.endDate[1])+'</strong>':'')+'</div></div>'+
+    (c.samples?pill('calibrated on '+c.samples,'clear'):pill('not calibrated','draft'))+'</div>';
+  h+='<div class="gantt">'+E.phases.map(function(ph){
+    var l=ph.startWeek[0]/max*100, w1=(ph.endWeek[0]-ph.startWeek[0])/max*100, w2=(ph.endWeek[1]-ph.startWeek[0])/max*100;
+    return '<div class="g-row"><div class="g-name">'+esc(ph.name)+'</div><div class="g-track"><span class="g-hi" style="left:'+l+'%;width:'+w2+'%"></span><span class="g-lo" style="left:'+l+'%;width:'+w1+'%"></span></div><div class="g-w">'+rng(ph.weeks[0],ph.weeks[1],'wk')+'</div></div>';}).join('')+'</div>';
+  h+='<div class="legend"><span><span class="dot" style="background:var(--accent)"></span>likely if nothing surprises us</span><span><span class="dot" style="background:var(--amber-soft);border:1px solid var(--amber)"></span>extra time the open questions could cost</span></div>';
+  h+='<p class="meta" style="margin:8px 0 0">'+c.team.people+' '+(c.team.people===1?'person':'people')+' × '+c.team.days_per_week+' days × '+Math.round(c.team.focus*100)+'% focus = '+rng(c.capacity,c.capacity)+' ideal days a week.'+(c.samples?' Scaled by '+c.factor.toFixed(2)+' from past milestones.':' Record actuals in <code>calibration.md</code> after each milestone so estimates learn.')+'</p></div>';
+  if(E.gapCost.length) h+='<h2>What open questions cost</h2><p class="lede">Answering these narrows the range. Biggest first.</p><table><thead><tr><th>Gap</th><th>Up to</th><th>Question</th></tr></thead><tbody>'+E.gapCost.map(function(g){return '<tr><td>'+gapLink(g.id)+'</td><td class="pillcell">'+pill('+'+g.days+' days',g.impact)+'</td><td>'+esc(g.question)+'</td></tr>';}).join('')+'</tbody></table>';
+  return h;
+}
+function workTable(ph){
+  var E=D.estimate;
+  var rows=(ph.setup?[{name:'Project setup',kind:'setup',low:E.calibration.setup[0],high:E.calibration.setup[1],reasons:[]}]:[]).concat(ph.items);
+  return '<details class="fold"><summary>Work breakdown ('+rows.length+' items)</summary><table><thead><tr><th>Work</th><th>Kind</th><th>Days</th><th>Why it could take longer</th></tr></thead><tbody>'+rows.map(function(it){
+    var link=it.kind==='setup'?esc(it.name):'<a href="#blueprint/'+it.kind+'/'+encodeURIComponent(it.id)+'">'+esc(it.name)+'</a>';
+    return '<tr><td>'+link+'</td><td>'+esc(it.kind==='setup'?'setup':D.kinds[it.kind].label.toLowerCase())+'</td><td>'+rng(it.low,it.high)+'</td><td>'+(it.reasons.length?'<span class="miss-t">'+esc(it.reasons.join('; '))+'</span>':'')+'</td></tr>';}).join('')+
+    '<tr><td>Testing, fixes, UAT</td><td>stabilize</td><td>+'+Math.round(E.calibration.stabilize[0]*100)+'–'+Math.round(E.calibration.stabilize[1]*100)+'%</td><td></td></tr></tbody></table></details>';
+}
 function roadmap(){
-  var h = '<h1>Roadmap</h1><p class="lede">Milestones in execution order, top to bottom. A milestone can move to OpenSpec only when its gate is clear.</p>';
-  if(!D.milestones.length) return h+'<p class="empty">No ROADMAP.md yet. Run /openidea:plan.</p>';
+  var h = '<h1>Roadmap</h1><p class="lede">Phases in execution order, one per milestone. Sizes come from the blueprint; the range widens wherever the definition is still thin. A phase can move to OpenSpec only when its gate is clear.</p>';
+  if(!D.milestones.length && !D.estimate) return h+'<p class="empty">No ROADMAP.md yet. Run /openidea:plan.</p>';
+  h += timeline();
+  var est={}; if(D.estimate) D.estimate.phases.forEach(function(ph){est[ph.id]=ph;});
+  if(D.milestones.length) h += '<h2>Phases</h2>';
   D.milestones.forEach(function(m,n){
-    h += '<div class="card" style="margin-bottom:12px"><h3 style="margin-top:0">'+(n+1)+'. '+esc(m.name)+' <code>'+esc(m.id)+'</code> '+pill(m.status)+' '+(m.blockingGaps.length?pill('gate blocked','blocked'):pill('gate clear','clear'))+'</h3>';
+    var ph=est[m.id];
+    h += '<div class="card" style="margin-bottom:12px"><h3 style="margin-top:0">'+(n+1)+'. '+esc(m.name)+' <code>'+esc(m.id)+'</code></h3><div class="chips">'+pill(m.status)+(m.blockingGaps.length?pill('gate blocked','blocked'):pill('gate clear','clear'))+(ph?pill(rng(ph.weeks[0],ph.weeks[1],'weeks'),'tag'):'')+'</div>';
+    if(ph) h += '<p class="meta">'+rng(ph.low,ph.high,'person-days')+(ph.endDate?' · ends '+fmtDate(ph.endDate[0])+' to '+fmtDate(ph.endDate[1]):' · ends in week '+rng(Math.ceil(ph.endWeek[0]),Math.ceil(ph.endWeek[1])))+'</p>';
     if(m.approvedIn) h += '<p class="meta">Approved in '+esc(m.approvedIn)+'</p>';
     h += '<table><thead><tr><th>Idea</th><th>Status</th><th>Category</th><th>Depends on</th></tr></thead><tbody>'+m.ideas.map(function(id){var i=ideaById[id];var d=i?i.data:{};return '<tr><td>'+ideaLink(id)+'</td><td>'+(d.status?pill(d.status):'')+'</td><td>'+esc(d.category||'')+'</td><td>'+((d.depends_on||[]).map(ideaLink).join(', '))+'</td></tr>';}).join('')+'</tbody></table>';
     if(m.blockingGaps.length) h += '<p class="meta" style="margin-top:8px">Blocked by: '+m.blockingGaps.map(gapLink).join(', ')+'</p>';
+    if(ph) h += workTable(ph);
     h += '</div>';
   });
+  if(D.estimate && D.estimate.unplanned.length) h += '<h2>Not in any milestone</h2><p class="lede">Defined in the blueprint but not planned yet, so not in the timeline.</p><table><thead><tr><th>Work</th><th>Kind</th><th>Days</th></tr></thead><tbody>'+D.estimate.unplanned.map(function(it){return '<tr><td><a href="#blueprint/'+it.kind+'/'+encodeURIComponent(it.id)+'">'+esc(it.name)+'</a></td><td>'+esc(D.kinds[it.kind].label.toLowerCase())+'</td><td>'+rng(it.low,it.high)+'</td></tr>';}).join('')+'</tbody></table>';
   return h;
 }
 function issues(){
@@ -507,3 +553,6 @@ window.addEventListener('hashchange',route); route();
 </body>
 </html>
 `;
+
+// Shared colour tokens, so the prototype and the dashboard read as one product.
+export const PALETTE = TEMPLATE.match(/:root\{[^\n]*\n@media \(prefers-color-scheme:dark\)[^\n]*/)[0];

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // OpenIdea CLI: deterministic checks and renderers for an openidea/ folder.
-// Usage: node openidea.mjs <validate|index|dashboard> [--root <dir>] [--json] [--client] [--out <file>]
+// Usage: node openidea.mjs <validate|index|diagrams|estimate|prototype|dashboard> [--root <dir>] [--json] [--client] [--out <file>]
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { loadProject } from './lib/load.mjs';
@@ -9,6 +9,8 @@ import { renderIndex } from './lib/indexmd.mjs';
 import { renderDashboard } from './lib/dashboard.mjs';
 import { renderDiagramsMd } from './lib/diagrams.mjs';
 import { openGaps } from './lib/analyze.mjs';
+import { renderEstimateMd } from './lib/estimate.mjs';
+import { renderPrototype } from './lib/prototype.mjs';
 
 const HELP = `openidea <command> [options]
 
@@ -18,6 +20,12 @@ Commands:
   index        Regenerate openidea/ideas/INDEX.md from a filesystem scan.
   diagrams     Write openidea/blueprint/diagrams.md: feature list plus Mermaid context,
                activity, and state diagrams generated from blueprint.json.
+  estimate     Write openidea/blueprint/estimate.md: phases (one per milestone) and a timeline
+               range per phase, sized from the blueprint, widened by undefined slots and open
+               gaps, scaled by openidea/calibration.md.
+  prototype    Write openidea/prototype/index.html: a clickable prototype generated from
+               blueprint.json (roles, flows, screens, sample data, state changes, permissions).
+               Undefined behaviour shows in red; feedback copies back as a gap.
   dashboard    Write a self-contained HTML dashboard (default openidea/dashboard/index.html).
 
 Options:
@@ -25,7 +33,7 @@ Options:
   --json         validate: print issues as JSON
   --client       dashboard: client-safe view (no discovery sources, gap details, chores or checks);
                  default output openidea/dashboard/client.html
-  --out <file>   dashboard: output path
+  --out <file>   dashboard, prototype: output path
 `;
 
 function parseArgs(argv) {
@@ -81,6 +89,21 @@ export function main(argv) {
     const name = project.brief?.body?.match(/^#\s+(.+)$/m)?.[1];
     write(path, renderDiagramsMd(project, name, openGaps(project)));
     console.log(`Wrote ${path}.`);
+    return 0;
+  }
+  if (cmd === 'estimate') {
+    if (!project.blueprint) { console.error('No openidea/blueprint/blueprint.json yet. Run /openidea:blueprint first.'); return 1; }
+    const path = join(project.dir, 'blueprint', 'estimate.md');
+    write(path, renderEstimateMd(project));
+    console.log(`Wrote ${path}.`);
+    return 0;
+  }
+  if (cmd === 'prototype') {
+    if (!project.blueprint) { console.error('No openidea/blueprint/blueprint.json yet. Run /openidea:blueprint first.'); return 1; }
+    const path = resolve(args.out || join(project.dir, 'prototype', 'index.html'));
+    const name = project.brief?.body?.match(/^#\s+(.+)$/m)?.[1];
+    write(path, renderPrototype(project, name));
+    console.log(`Wrote ${path}. Open it in a browser.`);
     return 0;
   }
   if (cmd === 'dashboard') {

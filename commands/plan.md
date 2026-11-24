@@ -21,4 +21,4 @@ At least 1 idea with status `ready`. If none, stop and point the user to `/openi
 
 ## Output
 
-`openidea/ROADMAP.md` (create/update). Heading order top-to-bottom = the agreed execution order. Then run `openidea validate` (fix errors this command introduced), `openidea index`, and `openidea dashboard` (section 9).
+`openidea/ROADMAP.md` (create/update). Heading order top-to-bottom = the agreed execution order. Then run `openidea validate` (fix errors this command introduced), `openidea index`, `openidea estimate` (phases and timeline per milestone, section 3.11; if `calibration.md` is missing, mention `/openidea:estimate` once instead), and `openidea dashboard` (section 9).

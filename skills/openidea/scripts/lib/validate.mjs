@@ -206,6 +206,10 @@ export function validateProject(p) {
       if (from.length === 0 && el.assumption !== true) add('error', 'bp-untraced', bpFile, `${kind} "${el.id}" has no derived_from and is not marked assumption: true.`);
     }
     const has = (kind, id) => idsByKind[kind]?.has(id);
+    for (const g of gapById.values()) for (const ref of Array.isArray(g.data.affects) ? g.data.affects : []) {
+      const [k, id] = String(ref).split('/');
+      if (!BLUEPRINT_KINDS[k] || !has(k, id)) add('warning', 'gap-affects', g.file, `affects "${ref}", which is not a blueprint element (use kind/id, e.g. integrations/whatsapp).`);
+    }
     for (const f of p.blueprint.flows || []) if (isFilled(f.actor) && !has('actors', f.actor)) add('error', 'bp-ref', bpFile, `flow "${f.id}" names actor "${f.actor}", which is not in actors.`);
     for (const s of p.blueprint.screens || []) for (const fl of s.flows || []) if (!has('flows', fl)) add('error', 'bp-ref', bpFile, `screen "${s.id}" names flow "${fl}", which is not in flows.`);
     for (const e of p.blueprint.entities || []) {

@@ -4,7 +4,7 @@
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMMANDS=(init capture blueprint evaluate resolve plan dashboard spec-draft compile export spec-audit)
+COMMANDS=(init capture blueprint evaluate resolve plan estimate prototype dashboard spec-draft compile export spec-audit)
 NOISE='SessionEnd hook|node:internal|Module\.|Node\.js|^\s*at |code:|requireStack|^}$|throw err|Warning: no stdin'
 
 echo "== CLI unit tests =="

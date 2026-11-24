@@ -81,6 +81,7 @@ export function loadProject(root) {
     roadmap: null,
     blueprint: null,
     blueprintError: null,
+    calibration: null,
     hasProposals: existsSync(join(dir, 'proposals')),
     hasOpenspec: existsSync(join(root, 'openspec')),
   };
@@ -102,6 +103,9 @@ export function loadProject(root) {
     const doc = readDoc(join(gapsDir, f), relative(root, join(gapsDir, f)));
     project.gaps.push({ ...doc, slug: f.replace(/\.md$/, '') });
   }
+
+  const calPath = join(dir, 'calibration.md');
+  if (existsSync(calPath)) project.calibration = readDoc(calPath, 'openidea/calibration.md');
 
   const roadmapPath = join(dir, 'ROADMAP.md');
   if (existsSync(roadmapPath)) project.roadmap = parseRoadmap(readFileSync(roadmapPath, 'utf8'));

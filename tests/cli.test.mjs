@@ -138,3 +138,34 @@ test('diagrams mark undefined branches and unreachable states, and list features
   assert.equal(md, renderDiagramsMd(loadProject(FIXTURE), 'Klinik', []));
   assert.match(md, /```mermaid\nflowchart LR/);
 });
+
+test('estimate: phases follow milestones, gaps widen only what they affect, calibration scales', async () => {
+  const { estimate, renderEstimateMd } = await import('../skills/openidea/scripts/lib/estimate.mjs');
+  const e = estimate(loadProject(FIXTURE));
+  assert.deepEqual(e.phases.map((p) => p.id), ['core-booking']);
+  const items = Object.fromEntries(e.phases[0].items.map((i) => [i.id, i]));
+  assert.ok(items.whatsapp.reasons.some((r) => r.includes('wa-api-limits')));
+  assert.ok(!items.patient.reasons.length, 'a gap with affects does not widen actors');
+  assert.ok(items.chair.reasons.includes('assumption, no idea states it'));
+  assert.ok(e.unplanned.some((i) => i.id === 'payment'), 'elements of unplanned ideas stay out of the total');
+  assert.ok(e.gapCost[0].id === 'wa-api-limits' && e.gapCost[0].days > 0);
+  assert.equal(e.total.endDate.length, 2);
+  assert.equal(renderEstimateMd(loadProject(FIXTURE)), renderEstimateMd(loadProject(FIXTURE)));
+  const d = copyFixture();
+  edit(d, 'calibration.md', (s) => s.replace('actuals: []', 'actuals:\n  - {milestone: core-booking, estimate_low: 10, estimate_high: 10, actual_days: 20}'));
+  const e2 = estimate(loadProject(d));
+  assert.equal(e2.calibration.factor, 2);
+  assert.ok(e2.total.low >= e.total.low * 2 - 1);
+});
+
+test('prototype: renders roles, flows and data from the blueprint, deterministic, no network', async () => {
+  const { renderPrototype, prototypePayload } = await import('../skills/openidea/scripts/lib/prototype.mjs');
+  const p = loadProject(FIXTURE);
+  const html = renderPrototype(p, 'Klinik');
+  assert.equal(html, renderPrototype(loadProject(FIXTURE), 'Klinik'));
+  assert.ok(!/<script[^>]+src=/.test(html), 'self-contained');
+  const d = prototypePayload(p, 'Klinik');
+  assert.deepEqual(d.actors.map((a) => a.id), ['patient', 'receptionist', 'cashier']);
+  assert.ok(d.screens.find((s) => s.id === 'occupancy-board').entities.includes('chair'));
+  assert.ok(!html.includes('discovery/'), 'prototype carries no discovery material');
+});

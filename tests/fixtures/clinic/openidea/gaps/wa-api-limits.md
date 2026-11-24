@@ -4,6 +4,7 @@ kind: feasibility
 found_by: coverage
 question: Can the WhatsApp Business API send a confirmation within one minute at peak hours?
 ideas: [wa-booking]
+affects: [integrations/whatsapp, flows/book-appointment]
 sources: [ideas/wa-booking.md]
 impact: medium
 confidence: medium

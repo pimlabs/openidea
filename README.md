@@ -41,6 +41,14 @@ Everything stays file-based: markdown and JSON under `openidea/`, git-friendly a
 /openidea:plan
   → arranges ready ideas into milestones with an explicit ID → openidea/ROADMAP.md
 
+/openidea:estimate
+  → phases per milestone and a timeline range, widened by what is still undefined,
+    plus what each open gap costs in days; calibrates on recorded actuals
+
+/openidea:prototype
+  → openidea/prototype/index.html: click through every flow as every role;
+    undefined behaviour shows in red, "Note a problem" turns into a gap
+
 /openidea:dashboard
   → openidea/dashboard/index.html: one file, opens offline in any browser
 
@@ -66,7 +74,7 @@ Each gap carries a kind (decision, clarification, desirability, feasibility, com
 
 ## Dashboard
 
-`/openidea:dashboard` (or `openidea dashboard`) writes a single self-contained HTML file with: an overview (open high-impact gaps, ideas ready, blueprint depth, hidden assumptions), the decision queue, filterable ideas, a feature list, the blueprint with a permission matrix and missing details in red, diagrams, the roadmap with each milestone's gate, and the check results. It works on phones too.
+`/openidea:dashboard` (or `openidea dashboard`) writes a single self-contained HTML file in five sections: Overview (health, the decision queue, milestone gates), Features (one page per flow with its activity diagram), Roadmap (phases, timeline range, what open gaps cost), Blueprint (context diagram, elements with state machines, permission matrix, missing details in red) and Ideas. It works on phones too.
 
 **Diagrams** are generated from the blueprint by code, never drawn by a model: a system context diagram, an activity diagram per flow (undefined failure or empty-state branches show as red nodes), and a state machine per entity (unreachable states in red). They are Mermaid, so `openidea/blueprint/diagrams.md` renders directly on GitHub; the dashboard loads Mermaid from a CDN and shows the source text when offline. `--client` writes a separate `client.html` without source quotes, gap details, chores, or checks, safe to send outside.
 
