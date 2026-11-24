@@ -392,7 +392,7 @@ function queueCards(ids, noRank){
     var body = CLIENT?'':sectionOf(g.body,'Proposed validation')||sectionOf(g.body,'Usulan validasi');
     return '<div class="card" data-href="gap/'+encodeURIComponent(id)+'" tabindex="0"><div class="chips">'+(noRank?'':pill('#'+(n+1),'rank'))+pill(d.impact)+pill(d.kind,'tag')+pill(d.status)+'</div><div class="q">'+esc(d.question)+'</div>'+
       (body?'<div class="md meta">'+md(body)+'</div>':'')+
-      '<div class="meta">'+t('ideasColon')+((d.ideas||[]).map(function(x){return esc(x);}).join(', ')||t('projectWide'))+'</div>'+
+      '<div class="meta">'+t('ideasColon')+((d.ideas||[]).map(function(x){var i=ideaById[x];return esc(i&&i.data.title||human(x));}).join(', ')||t('projectWide'))+'</div>'+
       (CLIENT?'':copyBtn('/openidea:resolve '+id))+'</div>';}).join('')+'</div>';
 }
 function sectionOf(body,title){var m=String(body||'').split(/^##\s+/m).filter(function(s){return s.toLowerCase().indexOf(title.toLowerCase())===0;})[0];return m?m.replace(/^[^\n]*\n/,'').trim():'';}

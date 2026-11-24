@@ -242,7 +242,7 @@ test('every string the dashboard and prototype show exists in every language', a
   const { DASH, PROTO } = await import('../skills/openidea/scripts/lib/i18n.mjs');
   const src = (f) => readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'skills/openidea/scripts/lib', f), 'utf8');
   for (const [file, dict, extra] of [['dashboard.mjs', DASH, ['openGaps1', 'openGapsN', 'highOpen1', 'highOpenN']], ['prototype.mjs', PROTO, []]]) {
-    const used = new Set([...src(file).matchAll(/\bt\('([A-Za-z0-9_]+)'/g)].map((m) => m[1]).concat(extra));
+    const used = new Set([...src(file).matchAll(/\bt\('([A-Za-z0-9_]+)'[,)]/g)].map((m) => m[1]).concat(extra));
     for (const lang of Object.keys(dict)) {
       const missing = [...used].filter((k) => dict[lang][k] == null);
       assert.deepEqual(missing, [], `${file} ${lang}`);

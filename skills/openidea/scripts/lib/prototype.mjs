@@ -136,17 +136,19 @@ roleSel.addEventListener('change',function(){ROLE=roleSel.value;route();});
 
 // Sample data: deterministic, from attribute names, so every viewer sees the same rows.
 var DATA={};
+// Column header: a reference shows the entity's name, the schema words name/status follow the language.
+function colName(a){var ref=byId(D.entities,a)||byId(D.actors,a);if(ref)return ref.name||ref.id;if(a==='name'||a==='status')return t('col_'+a);return a.replace(/_/g,' ');}
 function sampleValue(e,attr,n){
   var a=attr.toLowerCase(), ref=byId(D.entities,a)||byId(D.actors,a);
   if(a==='status'&&(e.states||[]).length) return e.states[0];
   if(ref) return (ref.name||ref.id)+' '+(n+1);
-  if(/name|title/.test(a)) return (e.name||e.id)+' '+(n+1);
-  if(/date|start|end|time|_at$|^at$|day/.test(a)) return '2026-12-0'+(n+1)+' '+(9+n*2)+':00';
-  if(/amount|price|total|fee|cost/.test(a)) return (150000*(n+1)).toLocaleString();
+  if(/name|title|nama|judul/.test(a)) return (e.name||e.id)+' '+(n+1);
+  if(/date|start|end|time|_at$|^at$|day|tanggal|mulai|selesai|waktu|jam_/.test(a)) return '2026-12-0'+(n+1)+' '+(9+n*2)+':00';
+  if(/amount|price|total|fee|cost|jumlah|harga|biaya|nilai|gaji|komisi|pendapatan|potongan|pajak/.test(a)) return (150000*(n+1)).toLocaleString();
   if(/method/.test(a)) return ['cash','card','transfer'][n%3];
-  if(/phone/.test(a)) return '+62 812 000 00'+(10+n);
+  if(/phone|telepon/.test(a)) return '+62 812 000 00'+(10+n);
   if(/email/.test(a)) return 'user'+(n+1)+'@example.com';
-  if(/qty|count|number/.test(a)) return String(n+1);
+  if(/qty|count|number|kuota|saldo|menit|terpakai/.test(a)) return String(n+1);
   return attr+' '+(n+1);
 }
 D.entities.forEach(function(e){DATA[e.id]=[0,1,2].map(function(n){var r={_id:n+1};(e.attributes||[]).forEach(function(a){r[a]=sampleValue(e,a,n);});if((e.states||[]).length&&!('status' in r))r.status=e.states[0];return r;});});
@@ -173,7 +175,7 @@ function entityTable(eid){
   var rows=DATA[eid], st=e.states||[];
   var h='<div class="w-box" style="background:var(--surface)"><div class="row" style="justify-content:space-between;margin-bottom:6px"><strong>'+esc(e.name||e.id)+'</strong>'+actionBtn(t('newX',(e.name||e.id).toLowerCase()),can('create',eid),'data-create="'+esc(eid)+'"')+'</div>';
   if(!(e.attributes||[]).length) h+=undef(t('holds',e.name||e.id));
-  h+='<table><thead><tr>'+attrs.map(function(a){return '<th>'+esc(a)+'</th>';}).join('')+(st.length?'<th class="st">status</th>':'')+'</tr></thead><tbody>';
+  h+='<table><thead><tr>'+attrs.map(function(a){return '<th>'+esc(colName(a))+'</th>';}).join('')+(st.length?'<th class="st">'+esc(colName('status'))+'</th>':'')+'</tr></thead><tbody>';
   if(!rows.length) h+='<tr><td colspan="9" class="meta">'+t('empty')+'</td></tr>';
   rows.forEach(function(r){
     h+='<tr>'+attrs.map(function(a){return '<td>'+esc(r[a])+'</td>';}).join('')+(st.length?'<td class="st"><span class="pill '+stateClass(e,r.status)+'">'+esc(String(r.status).replace(/_/g,' '))+'</span></td>':'')+'</tr>';
