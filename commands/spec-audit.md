@@ -1,18 +1,18 @@
 ---
-description: Read-only drift audit between openspec/changes/<milestone> and proposals/ideas
+description: Read-only drift audit between openspec/changes/<ID> and proposals/ideas
 ---
 
 Load the `openidea` skill (Skill tool) to read section 2, 3.4, 3.2 before proceeding.
 
-Arguments from the user: target milestone name. $ARGUMENTS
+Arguments from the user: target milestone name or ID (the folder is `openspec/changes/<ID>/`, per `ROADMAP.md`). $ARGUMENTS
 
 ## Prerequisite
 
-The `openspec/changes/<milestone>` folder must exist. If not, stop and say so explicitly.
+The `openspec/changes/<ID>` folder must exist. If not, stop and say so explicitly.
 
 ## Process
 
-1. Check the target folder's completeness: are `proposal.md` + `design.md` + `tasks.md` all present?
+1. Check the target folder's completeness: are `proposal.md` + `design.md` + `tasks.md` and at least one `specs/<capability>/spec.md` present?
    - If incomplete: report it as **"still in progress"**, not as drift.
 2. If complete, compare the OpenSpec scope against `openidea/proposals/<approved for this milestone>.md` + the related `openidea/ideas/` — look for drift:
    - missing scope (present in the proposal/ideas, absent from OpenSpec)

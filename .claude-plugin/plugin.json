@@ -1,7 +1,7 @@
 {
   "name": "openidea",
-  "description": "OpenIdea — manage a product idea lifecycle end-to-end, file-based — BRIEF, idea capture, evaluation, roadmap, through to OpenSpec technical spec drafting.",
-  "version": "0.1.0",
+  "description": "OpenIdea — make an app's definition clear before building it: capture ideas, find blind spots with a validation plan for each, derive a traced blueprint, read it all in an HTML dashboard, then draft OpenSpec changes.",
+  "version": "0.2.0",
   "author": { "name": "Eko Dedy Purnomo" },
   "license": "MIT",
   "homepage": "https://github.com/pimlabs/openidea",

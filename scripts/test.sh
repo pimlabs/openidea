@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
-# Smoke test: manifest validation + all 8 /openidea:* commands resolve via the plugin loader.
+# Tests: CLI unit tests, manifest validation, and every /openidea:* command resolves via the plugin loader.
 # Usage: scripts/test.sh
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMMANDS=(init capture evaluate plan spec-draft compile export spec-audit)
-NOISE='SessionEnd hook|cavemem|node:internal|Module\.|Node\.js|^\s*at |code:|requireStack|^}$|throw err|Warning: no stdin'
+COMMANDS=(init capture blueprint evaluate resolve plan estimate prototype report dashboard spec-draft compile export spec-audit)
+NOISE='SessionEnd hook|node:internal|Module\.|Node\.js|^\s*at |code:|requireStack|^}$|throw err|Warning: no stdin'
 
+echo "== CLI unit tests =="
+if ! node --test "$DIR"/tests/*.test.mjs; then
+  echo "FAIL: CLI unit tests"
+  exit 1
+fi
+
+echo
 echo "== plugin validate =="
 if ! claude plugin validate "$DIR"; then
   echo "FAIL: manifest validation"

@@ -17,6 +17,8 @@ No hard prerequisite, but ask for the milestone name first if it's not already i
    - The milestone's scope from `openidea/ROADMAP.md`.
    - `openidea/proposals/<approved for this milestone>.md` — if it exists.
    - The full content of each `openidea/ideas/<slug>.md` related to the milestone (including `type: chore` — export does **not** exclude chores, unlike `/openidea:compile`).
+   - The blueprint elements derived from those ideas (`openidea/blueprint/blueprint.json`), rendered as readable tables.
+   - Gaps on those ideas: resolved ones as decisions, `accepted_risk` ones as known risks, open ones as open questions — each as its question and resolution only, **without** the Finding quotes or `sources` (they may quote `discovery/`).
 2. **Always** exclude `openidea/discovery/` — no exceptions, this is a client data-security principle.
 3. **Always** exclude ideas from other, unrelated milestones.
 4. If a language parameter is requested, translate **only** in this export file — don't change the `ideas/` source.
