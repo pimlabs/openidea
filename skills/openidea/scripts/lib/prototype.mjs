@@ -15,7 +15,7 @@ function entitiesFor(bp, texts, flowIds) {
     list(e.transitions).some((tr) => flowIds.includes(tr.flow))).map((e) => e.id);
 }
 
-export function prototypePayload(p, projectName) {
+export function prototypePayload(p, projectName, mode = 'user') {
   const bp = p.blueprint;
   const screens = list(bp.screens).map((s) => {
     const flows = list(s.flows);
@@ -24,6 +24,7 @@ export function prototypePayload(p, projectName) {
   });
   const flows = list(bp.flows).map((f) => ({ ...f, entities: entitiesFor(bp, [f.name, f.trigger, ...list(f.steps)], [f.id]) }));
   return {
+    mode,
     project: projectName || 'OpenIdea project',
     actors: list(bp.actors),
     entities: list(bp.entities),
@@ -34,8 +35,9 @@ export function prototypePayload(p, projectName) {
   };
 }
 
-export function renderPrototype(p, projectName) {
-  const json = JSON.stringify(prototypePayload(p, projectName)).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+// mode 'user': what a real user sees, nothing meta. mode 'review': the same app with every undefined behaviour marked.
+export function renderPrototype(p, projectName, { mode = 'user' } = {}) {
+  const json = JSON.stringify(prototypePayload(p, projectName, mode)).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
   return TEMPLATE.replace('/*__PALETTE__*/', () => PALETTE).replace('/*__DATA__*/', () => json);
 }
 
@@ -97,12 +99,14 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;p
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet .card{width:min(560px,100%);border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
 .sheet textarea{width:100%;min-height:110px;margin:8px 0}
+.progress{height:6px;background:var(--sunk);border-radius:99px;overflow:hidden;margin:6px 0 14px}.progress span{display:block;height:100%;background:var(--accent)}
+.done-card{text-align:center;padding:32px 16px}.big-ok{width:56px;height:56px;border-radius:50%;background:var(--green-soft);color:var(--green);font-size:30px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
 .count{font-size:12px;font-weight:700;color:var(--red);background:var(--red-soft);border-radius:99px;padding:2px 9px}
 @media (max-width:640px){.role{margin-left:0;width:100%}.role select{flex:1}.screen{border-radius:16px}th:nth-child(n+4):not(.st),td:nth-child(n+4):not(.st):not([colspan]){display:none}}
 </style>
 </head>
 <body>
-<header><div class="bar"><div class="brand" id="brand"></div><div class="role"><label>Acting as <select id="role"></select></label><button class="btn ghost" id="fb">Note a problem</button></div></div></header>
+<header><div class="bar"><div class="brand" id="brand"></div><div class="role"><label><span id="rolelbl">Acting as</span> <select id="role"></select></label><button class="btn ghost" id="fb">Note a problem</button></div></div></header>
 <nav><div class="in" id="nav"></div></nav>
 <main id="app"></main>
 <script type="application/json" id="data">/*__DATA__*/</script>
@@ -112,10 +116,12 @@ var D=JSON.parse(document.getElementById('data').textContent), app=document.getE
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function filled(v){if(v==null)return false;if(Array.isArray(v))return v.length>0;if(typeof v==='string')return v.trim()!==''&&v.trim().toUpperCase()!=='TBD';return true;}
 function byId(list,id){for(var i=0;i<list.length;i++)if(list[i].id===id)return list[i];return null;}
-function undef(what){UNDEF[what]=1;return '<div class="undef-box">Not defined: '+esc(what)+'. <a href="#" data-note="'+esc(what)+'">Note it</a></div>';}
+var USER=D.mode==='user';
+function undef(what){if(USER)return '';UNDEF[what]=1;return '<div class="undef-box">Not defined: '+esc(what)+'. <a href="#" data-note="'+esc(what)+'">Note it</a></div>';}
 var UNDEF={};
-document.getElementById('brand').innerHTML=esc(D.project)+'<small>Prototype from the blueprint · not a design</small>';
-document.title=D.project+' · Prototype';
+document.getElementById('brand').innerHTML=esc(D.project)+(USER?'':'<small>Prototype review · red marks what the blueprint leaves undefined</small>');
+document.title=D.project+(USER?'':' · Prototype review');
+if(USER){document.getElementById('fb').remove();document.getElementById('rolelbl').textContent='Signed in as';}
 
 // Roles
 var roleSel=document.getElementById('role');
@@ -150,7 +156,9 @@ function actorNamedIn(text){var t=String(text||'').toLowerCase();for(var i=0;i<D
 function stateClass(e,s){var st=e.states||[];var i=st.indexOf(s);if(i===0)return 's0';if(/cancel|reject|fail|no_show|void|expired/.test(s))return 's2';return i>0?'s1':'';}
 function actionBtn(label,decision,attrs){
   if(decision===true) return '<button class="btn" '+attrs+'>'+esc(label)+'</button>';
+  if(decision===false&&USER) return '';
   if(decision===false) return '<button class="btn" disabled title="Not allowed for this role">'+esc(label)+'</button>';
+  if(USER) return '<button class="btn" '+attrs+'>'+esc(label)+'</button>';
   UNDEF['who may '+label]=1;
   return '<button class="btn undefined" '+attrs+' title="Nobody defined whether this role may do this">'+esc(label)+' ?</button>';
 }
@@ -171,7 +179,7 @@ function entityTable(eid){
         // Who moves it: the flow's actor, else a role named at the start of the event ("Receptionist confirms"), else the permission matrix.
         var who=f?f.actor:actorNamedIn(t.event);
         var d=who?(who===ROLE?true:false):can('update',eid);
-        return actionBtn(label,d,'data-move="'+esc(eid)+'|'+r._id+'|'+esc(t.to)+'"');}).join(''):'<span class="meta">No way out of “'+esc(r.status)+'”'+(r.status===st[0]||/complete|done|closed|archiv|cancel/.test(r.status)?'':' <span class="undef">: is this a dead end?</span>')+'</span>')+'</div></td></tr>';
+        return actionBtn(label,d,'data-move="'+esc(eid)+'|'+r._id+'|'+esc(t.to)+'"');}).join(''):(USER?'':'<span class="meta">No way out of “'+esc(r.status)+'”'+(r.status===st[0]||/complete|done|closed|archiv|cancel/.test(r.status)?'':' <span class="undef">: is this a dead end?</span>')+'</span>'))+'</div></td></tr>';
     }
   });
   return h+'</tbody></table></div>';
@@ -180,18 +188,37 @@ function entityTable(eid){
 // Screen elements become rough widgets by keyword. Unknown ones stay labelled boxes.
 function widget(el,entities){
   var t=String(el).toLowerCase();
-  if(/button|confirm|submit|save|send|book|pay/.test(t)) return '<button class="btn ghost" data-toast="'+esc(el)+' pressed">'+esc(el)+'</button>';
+  if(/\b(button|confirm|submit|save|send|book|pay)\b/.test(t)) return '<button class="btn ghost" data-toast="'+esc(el)+' pressed">'+esc(el)+'</button>';
   if(/search/.test(t)) return '<input placeholder="'+esc(el)+'">';
   if(/date|calendar|picker/.test(t)) return '<label class="w-box"><span class="lbl">'+esc(el)+'</span><input type="date" value="2026-12-01" style="width:100%"></label>';
   if(/count|total|summary|chart|graph|kpi|stat/.test(t)) return '<div class="w-box"><span class="lbl">'+esc(el)+'</span><span class="w-stat">'+(3+el.length%7)+'</span></div>';
   if(/toggle|switch/.test(t)) return '<label class="w-box row"><input type="checkbox"> '+esc(el)+'</label>';
   if(/field|input|form|note|name|email|phone/.test(t)) return '<label class="w-box"><span class="lbl">'+esc(el)+'</span><input style="width:100%"></label>';
-  return '<div class="w-box"><span class="lbl">'+esc(el)+'</span><span class="meta">Placeholder</span></div>';
+  return USER?'<div class="w-box">'+esc(el)+'</div>':'<div class="w-box"><span class="lbl">'+esc(el)+'</span><span class="meta">Placeholder</span></div>';
 }
 
-var PAGES=[['flows','Flows'],['screens','Screens'],['data','Data']];
+var PAGES=USER?[['flows','Home'],['data','Records']]:[['flows','Flows'],['screens','Screens'],['data','Data']];
 function myFlows(){return D.flows.filter(function(f){return f.actor===ROLE;});}
+function userHome(){
+  var a=byId(D.actors,ROLE), fl=myFlows();
+  return '<h1>Hi, '+esc(a?(a.name||a.id):'there')+'</h1><p class="lede">What would you like to do?</p>'+
+    (fl.length?'<div class="grid">'+fl.map(function(f){return '<a class="card tile" href="#flow/'+encodeURIComponent(f.id)+'"><h3>'+esc(f.name||f.id)+'</h3></a>';}).join('')+'</div>':'<p class="meta">Nothing to do here yet.</p>');
+}
+function userFlow(f){
+  var id=f.id, steps=f.steps||[], i=STEP[id]||0, sc=f.scenarios||{};
+  var screens=D.screens.filter(function(s){return (s.flows||[]).indexOf(id)>=0;});
+  var h='<p class="meta"><a href="#flows">← Home</a></p>';
+  if(i>=steps.length){
+    return h+'<div class="card done-card"><div class="big-ok">✓</div><h1>'+esc(filled(sc.success)?sc.success:'Done')+'</h1><div class="row" style="justify-content:center;margin-top:14px"><button class="btn" data-step="'+esc(id)+'|reset">Back to home</button></div></div>';
+  }
+  h+='<div class="meta">'+esc(f.name||f.id)+' · step '+(i+1)+' of '+steps.length+'</div><div class="progress"><span style="width:'+((i+1)/steps.length*100)+'%"></span></div><h1>'+esc(steps[i])+'</h1>';
+  h+=screens.map(screenHtml).join('');
+  (f.entities||[]).forEach(function(eid){ if(!screens.some(function(s){return (s.entities||[]).indexOf(eid)>=0;})) h+=entityTable(eid); });
+  h+='<div class="row" style="margin:16px 0">'+(i>0?'<button class="btn ghost" data-step="'+esc(id)+'|-1">Back</button>':'')+'<button class="btn" data-step="'+esc(id)+'|1">'+(i===steps.length-1?'Done':'Continue')+'</button></div>';
+  return h;
+}
 function home(){
+  if(USER) return userHome();
   var a=byId(D.actors,ROLE);
   var h='<h1>'+esc(a?(a.name||a.id):'No role')+'</h1><p class="lede">'+(a&&filled(a.description)?esc(a.description):'<span class="undef">What this role does is not defined.</span>')+' Pick a flow to walk through it step by step.</p>';
   var fl=myFlows();
@@ -204,6 +231,7 @@ var STEP={};
 function flow(id){
   var f=byId(D.flows,id); if(!f) return '<p>Flow not found.</p>';
   if(f.actor&&f.actor!==ROLE&&byId(D.actors,f.actor)){ROLE=f.actor;roleSel.value=ROLE;}
+  if(USER) return userFlow(f);
   var steps=f.steps||[], i=STEP[id]||0, sc=f.scenarios||{};
   var screens=D.screens.filter(function(s){return (s.flows||[]).indexOf(id)>=0;});
   var h='<p class="meta"><a href="#flows">← Flows</a></p><h1>'+esc(f.name||f.id)+'</h1><p class="lede">Starts when: '+(filled(f.trigger)?esc(f.trigger):'<span class="undef">not defined</span>')+'</p>';
@@ -224,7 +252,7 @@ function flow(id){
 }
 function screenHtml(s){
   var els=s.elements||[];
-  return '<div class="screen" style="margin-bottom:12px"><div class="top">'+esc(s.name||s.id)+'<span class="meta">'+esc(s.id)+'</span></div><div class="body">'+
+  return '<div class="screen" style="margin-bottom:12px"><div class="top">'+esc(s.name||s.id)+(USER?'':'<span class="meta">'+esc(s.id)+'</span>')+'</div><div class="body">'+
     (els.length?els.map(function(e){return widget(e,s.entities);}).join(''):undef('what is on '+(s.name||s.id)))+
     (s.entities||[]).map(entityTable).join('')+'</div></div>';
 }
@@ -234,6 +262,7 @@ function screens(){
   return h+D.screens.map(screenHtml).join('');
 }
 function data(){
+  if(USER) return '<h1>Records</h1>'+D.entities.map(function(e){return '<div style="margin-bottom:12px">'+entityTable(e.id)+'</div>';}).join('');
   var h='<h1>Data</h1><p class="lede">Sample records for every entity. Buttons follow the permission matrix for the role you are acting as: grey means not allowed, red dashed means nobody decided.</p>';
   if(!D.entities.length) return h+undef('any entity');
   return h+D.entities.map(function(e){return '<div style="margin-bottom:12px">'+entityTable(e.id)+'</div>';}).join('');
@@ -241,7 +270,7 @@ function data(){
 function route(){
   UNDEF={};
   var parts=(location.hash.replace(/^#/,'')||'flows').split('/').map(decodeURIComponent), page=parts[0], html;
-  if(page==='flow') html=flow(parts[1]); else if(page==='screens') html=screens(); else if(page==='data') html=data(); else {page='flows';html=home();}
+  if(page==='flow') html=flow(parts[1]); else if(page==='screens'&&!USER) html=screens(); else if(page==='data') html=data(); else {page='flows';html=home();}
   var key=page==='flow'?'flows':page;
   document.getElementById('nav').innerHTML=PAGES.map(function(p){return '<a href="#'+p[0]+'"'+(p[0]===key?' class="on"':'')+'>'+p[1]+'</a>';}).join('');
   var n=Object.keys(UNDEF).length;
@@ -261,7 +290,7 @@ function note(context){
     if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done,function(){prompt('Copy this:',txt);s.remove();}); else {prompt('Copy this:',txt);s.remove();}
   };
 }
-document.getElementById('fb').onclick=function(){note('');};
+if(!USER) document.getElementById('fb').onclick=function(){note('');};
 document.addEventListener('click',function(e){
   var t=e.target.closest('[data-note]'); if(t){e.preventDefault();note(t.getAttribute('data-note'));return;}
   t=e.target.closest('[data-step]'); if(t){var p=t.getAttribute('data-step').split('|');var f=byId(D.flows,p[0]);STEP[p[0]]=p[1]==='reset'?0:Math.max(0,Math.min((f.steps||[]).length,(STEP[p[0]]||0)+Number(p[1])));route();return;}

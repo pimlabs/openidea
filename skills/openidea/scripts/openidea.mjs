@@ -9,7 +9,7 @@ import { renderIndex } from './lib/indexmd.mjs';
 import { renderDashboard } from './lib/dashboard.mjs';
 import { renderDiagramsMd } from './lib/diagrams.mjs';
 import { openGaps } from './lib/analyze.mjs';
-import { renderEstimateMd } from './lib/estimate.mjs';
+import { renderEstimateJson, renderWorkCsv } from './lib/estimate.mjs';
 import { renderPrototype } from './lib/prototype.mjs';
 
 const HELP = `openidea <command> [options]
@@ -20,12 +20,13 @@ Commands:
   index        Regenerate openidea/ideas/INDEX.md from a filesystem scan.
   diagrams     Write openidea/blueprint/diagrams.md: feature list plus Mermaid context,
                activity, and state diagrams generated from blueprint.json.
-  estimate     Write openidea/blueprint/estimate.md: phases (one per milestone) and a timeline
-               range per phase, sized from the blueprint, widened by undefined slots and open
-               gaps, scaled by openidea/calibration.md.
-  prototype    Write openidea/prototype/index.html: a clickable prototype generated from
-               blueprint.json (roles, flows, screens, sample data, state changes, permissions).
-               Undefined behaviour shows in red; feedback copies back as a gap.
+  estimate     Write raw data: openidea/blueprint/estimate.json (phases, one per milestone, with
+               timeline ranges and what each open gap costs) and work-breakdown.csv. Sized from
+               the blueprint, widened by undefined slots and open gaps, scaled by calibration.md.
+               People read it on the dashboard's Roadmap page.
+  prototype    Write two clickable prototypes generated from blueprint.json: prototype/index.html
+               for real users (looks like the app, nothing meta) and prototype/review.html for
+               the team (undefined behaviour in red, feedback copies back as a gap).
   dashboard    Write a self-contained HTML dashboard (default openidea/dashboard/index.html).
 
 Options:
@@ -33,7 +34,7 @@ Options:
   --json         validate: print issues as JSON
   --client       dashboard: client-safe view (no discovery sources, gap details, chores or checks);
                  default output openidea/dashboard/client.html
-  --out <file>   dashboard, prototype: output path
+  --out <file>   dashboard: output path
 `;
 
 function parseArgs(argv) {
@@ -93,17 +94,19 @@ export function main(argv) {
   }
   if (cmd === 'estimate') {
     if (!project.blueprint) { console.error('No openidea/blueprint/blueprint.json yet. Run /openidea:blueprint first.'); return 1; }
-    const path = join(project.dir, 'blueprint', 'estimate.md');
-    write(path, renderEstimateMd(project));
-    console.log(`Wrote ${path}.`);
+    const json = join(project.dir, 'blueprint', 'estimate.json'), csv = join(project.dir, 'blueprint', 'work-breakdown.csv');
+    write(json, renderEstimateJson(project));
+    write(csv, renderWorkCsv(project));
+    console.log(`Wrote ${json} and ${csv}.`);
     return 0;
   }
   if (cmd === 'prototype') {
     if (!project.blueprint) { console.error('No openidea/blueprint/blueprint.json yet. Run /openidea:blueprint first.'); return 1; }
-    const path = resolve(args.out || join(project.dir, 'prototype', 'index.html'));
     const name = project.brief?.body?.match(/^#\s+(.+)$/m)?.[1];
-    write(path, renderPrototype(project, name));
-    console.log(`Wrote ${path}. Open it in a browser.`);
+    const user = join(project.dir, 'prototype', 'index.html'), review = join(project.dir, 'prototype', 'review.html');
+    write(user, renderPrototype(project, name, { mode: 'user' }));
+    write(review, renderPrototype(project, name, { mode: 'review' }));
+    console.log(`Wrote ${user} (for real users: no meta) and ${review} (for the team: undefined behaviour in red).`);
     return 0;
   }
   if (cmd === 'dashboard') {

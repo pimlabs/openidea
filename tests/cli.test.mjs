@@ -140,7 +140,7 @@ test('diagrams mark undefined branches and unreachable states, and list features
 });
 
 test('estimate: phases follow milestones, gaps widen only what they affect, calibration scales', async () => {
-  const { estimate, renderEstimateMd } = await import('../skills/openidea/scripts/lib/estimate.mjs');
+  const { estimate, renderEstimateJson, renderWorkCsv } = await import('../skills/openidea/scripts/lib/estimate.mjs');
   const e = estimate(loadProject(FIXTURE));
   assert.deepEqual(e.phases.map((p) => p.id), ['core-booking']);
   const items = Object.fromEntries(e.phases[0].items.map((i) => [i.id, i]));
@@ -150,7 +150,12 @@ test('estimate: phases follow milestones, gaps widen only what they affect, cali
   assert.ok(e.unplanned.some((i) => i.id === 'payment'), 'elements of unplanned ideas stay out of the total');
   assert.ok(e.gapCost[0].id === 'wa-api-limits' && e.gapCost[0].days > 0);
   assert.equal(e.total.endDate.length, 2);
-  assert.equal(renderEstimateMd(loadProject(FIXTURE)), renderEstimateMd(loadProject(FIXTURE)));
+  const j = JSON.parse(renderEstimateJson(loadProject(FIXTURE)));
+  assert.equal(j.schema, 'openidea.estimate/1');
+  assert.equal(renderEstimateJson(loadProject(FIXTURE)), renderEstimateJson(loadProject(FIXTURE)));
+  const csv = renderWorkCsv(loadProject(FIXTURE)).trim().split('\n');
+  assert.equal(csv[0], 'phase_id,phase,kind,id,name,low_days,high_days,ideas,uncertainty');
+  assert.ok(csv.some((l) => l.startsWith('core-booking,Core Booking,integration,whatsapp,')));
   const d = copyFixture();
   edit(d, 'calibration.md', (s) => s.replace('actuals: []', 'actuals:\n  - {milestone: core-booking, estimate_low: 10, estimate_high: 10, actual_days: 20}'));
   const e2 = estimate(loadProject(d));
@@ -168,4 +173,7 @@ test('prototype: renders roles, flows and data from the blueprint, deterministic
   assert.deepEqual(d.actors.map((a) => a.id), ['patient', 'receptionist', 'cashier']);
   assert.ok(d.screens.find((s) => s.id === 'occupancy-board').entities.includes('chair'));
   assert.ok(!html.includes('discovery/'), 'prototype carries no discovery material');
+  const review = renderPrototype(p, 'Klinik', { mode: 'review' });
+  assert.match(html, /"mode":"user"/);
+  assert.match(review, /"mode":"review"/);
 });

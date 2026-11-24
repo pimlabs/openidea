@@ -4,7 +4,7 @@ description: Generate a clickable prototype from the blueprint to walk through e
 
 Load the `openidea` skill (Skill tool) to read sections 3.8 (gaps), 3.12 (prototype) and 9 before proceeding.
 
-Arguments from the user (optional): nothing to (re)generate, or `feedback "<view> as <role>: <note>"` as copied from the prototype's "Note a problem" button. $ARGUMENTS
+Arguments from the user (optional): nothing to (re)generate, or `feedback "<view> as <role>: <note>"` as copied from `review.html`'s "Note a problem" button. $ARGUMENTS
 
 ## Prerequisite
 
@@ -13,7 +13,9 @@ Arguments from the user (optional): nothing to (re)generate, or `feedback "<view
 ## Process: generate
 
 1. Run `openidea validate`, then `openidea prototype`.
-2. Tell the user where it is (`openidea/prototype/index.html`), and how to use it in three lines: pick a role, walk each flow with Next step, try the buttons on Data. Red dashed marks are behaviour nobody defined; "Note a problem" copies a line to paste back here.
+2. Tell the user there are two files and who each is for, in at most four lines:
+   - `openidea/prototype/index.html`: show this to real users or the client. It looks like the app and has nothing meta in it. Watch them use it; write down where they hesitate.
+   - `openidea/prototype/review.html`: for the team. Red dashed marks are behaviour nobody defined; "Note a problem" copies a line to paste back here. Turn what you saw users do into notes the same way.
 3. It is generated from the blueprint: never edit it. To change it, change the ideas or answer gaps, re-run `/openidea:blueprint`, regenerate.
 
 ## Process: `feedback "..."`
@@ -29,4 +31,4 @@ Never change an idea or the blueprint from feedback directly. The gap goes throu
 
 ## Output
 
-`openidea/prototype/index.html` (generated) and, for feedback, one gap file.
+`openidea/prototype/index.html` and `review.html` (generated) and, for feedback, one gap file.

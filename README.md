@@ -42,12 +42,12 @@ Everything stays file-based: markdown and JSON under `openidea/`, git-friendly a
   → arranges ready ideas into milestones with an explicit ID → openidea/ROADMAP.md
 
 /openidea:estimate
-  → phases per milestone and a timeline range, widened by what is still undefined,
-    plus what each open gap costs in days; calibrates on recorded actuals
+  → raw estimate.json + work-breakdown.csv: phases per milestone, a timeline range
+    widened by what is still undefined, what each open gap costs in days
 
 /openidea:prototype
-  → openidea/prototype/index.html: click through every flow as every role;
-    undefined behaviour shows in red, "Note a problem" turns into a gap
+  → prototype/index.html for real users (looks like the app, nothing meta) and
+    review.html for the team (undefined behaviour in red, notes become gaps)
 
 /openidea:dashboard
   → openidea/dashboard/index.html: one file, opens offline in any browser

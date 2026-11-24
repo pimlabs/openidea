@@ -16,14 +16,14 @@ Arguments from the user (optional): nothing to (re)generate, or `actual <milesto
 2. Run `openidea validate`, then `openidea estimate`, then `openidea dashboard` so the Roadmap page shows the same numbers.
 3. Report in at most six lines: the total range in weeks (and dates if a start date is set), the widest phase, and the top three entries of "What open gaps cost". If the high end is more than twice the low end, say that the definition is still thin and point to `/openidea:resolve` on the costliest gap, because answering it is cheaper than padding the plan.
 
-Never edit `estimate.md` or change a number by hand. To change an estimate, change its inputs: the blueprint (re-run `/openidea:blueprint`), the gaps, or `calibration.md` coefficients, and say which input you changed.
+Never edit `estimate.json` or `work-breakdown.csv`, and never change a number by hand. To change an estimate, change its inputs: the blueprint (re-run `/openidea:blueprint`), the gaps, or `calibration.md` coefficients, and say which input you changed.
 
 ## Process: `actual <milestone-id> <person-days>`
 
-1. Read `openidea/blueprint/estimate.md` for that milestone's current low and high person-days. If the milestone is not in it, stop and say so.
+1. Read `openidea/blueprint/estimate.json` for that milestone's current `low_days` and `high_days`. If the milestone is not in it, stop and say so.
 2. Append to `actuals` in `calibration.md`: `- {milestone: <id>, estimate_low: <low>, estimate_high: <high>, actual_days: <days>}`.
 3. Regenerate (`openidea estimate`, `openidea dashboard`) and report the new calibration factor (median of actual ÷ estimated midpoint) and how the remaining phases moved.
 
 ## Output
 
-`openidea/blueprint/estimate.md` (generated), `openidea/calibration.md` (human-owned inputs), and the Roadmap page of the dashboard.
+Raw `openidea/blueprint/estimate.json` and `work-breakdown.csv` (generated), `openidea/calibration.md` (human-owned inputs), and the Roadmap page of the dashboard. For a finished document, `/openidea:report`.
