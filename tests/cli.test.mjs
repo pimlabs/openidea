@@ -186,6 +186,9 @@ test('report: same content in md, pptx and pdf, client-safe, reproducible', asyn
   const m = reportModel(p);
   assert.equal(m.features.length, 2);
   assert.equal(m.questions[0].impact, 'High');
+  assert.match(m.headline, /^2 features in 1 phase, likely ready by /); // action title computed from the data
+  assert.match(m.featuresHeadline, /1 has a clear definition of done, 1 still needs one/);
+  assert.ok(m.timeline.likely >= m.timeline.low && m.timeline.likely <= m.timeline.high);
   const md = renderReportMd(p);
   for (const banned of ['discovery/', 'gaps/', '/openidea:', 'refund-permission', 'derived_from']) assert.ok(!md.includes(banned), `report must not contain ${banned}`);
   assert.equal(md, renderReportMd(loadProject(FIXTURE)));

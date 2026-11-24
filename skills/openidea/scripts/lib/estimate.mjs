@@ -100,18 +100,23 @@ export function estimate(p) {
   if (!milestones.length) items.forEach((it) => { it.phase = 0; });
   const phases = phaseDefs.map((m, i) => {
     const its = items.filter((it) => it.phase === i);
-    let low = its.reduce((s, it) => s + it.low, 0), high = its.reduce((s, it) => s + it.high, 0);
-    if (i === 0) { low += cal.coef.setup[0]; high += cal.coef.setup[1]; }
-    const stab = [low * cal.coef.stabilize[0], high * cal.coef.stabilize[1]];
-    low = (low + stab[0]) * cal.factor; high = (high + stab[1]) * cal.factor;
-    return { ...m, items: its, setup: i === 0, low: half(low), high: half(high), weeks: [half(low / capacity), half(high / capacity)] };
+    // likely: the middle of the size range, assuming what is still open resolves without surprises.
+    // high: the top of the size range with every undefined slot, assumption and open gap priced in.
+    let low = its.reduce((s, it) => s + it.low, 0), high = its.reduce((s, it) => s + it.high, 0), likely = its.reduce((s, it) => s + (it.low + it.base_high) / 2, 0);
+    if (i === 0) { low += cal.coef.setup[0]; high += cal.coef.setup[1]; likely += (cal.coef.setup[0] + cal.coef.setup[1]) / 2; }
+    const stabMid = (cal.coef.stabilize[0] + cal.coef.stabilize[1]) / 2;
+    low = low * (1 + cal.coef.stabilize[0]) * cal.factor; high = high * (1 + cal.coef.stabilize[1]) * cal.factor; likely = likely * (1 + stabMid) * cal.factor;
+    return { ...m, items: its, setup: i === 0, low: half(low), high: half(high), likely: half(likely), weeks: [half(low / capacity), half(high / capacity)], likelyWeeks: half(likely / capacity) };
   }).filter((ph, i) => ph.items.length || i === 0);
 
-  let cum = [0, 0];
+  let cum = [0, 0], cumLikely = 0;
   for (const ph of phases) {
     ph.startWeek = [cum[0], cum[1]];
     cum = [cum[0] + ph.weeks[0], cum[1] + ph.weeks[1]];
     ph.endWeek = [...cum];
+    cumLikely += ph.likelyWeeks;
+    ph.endWeekLikely = cumLikely;
+    if (cal.start) ph.endDateLikely = addDays(cal.start, Math.ceil(cumLikely * 7));
     if (cal.start) ph.endDate = cum.map((w) => addDays(cal.start, Math.ceil(w * 7)));
   }
   const unplanned = items.filter((it) => it.phase === null);
@@ -127,7 +132,7 @@ export function estimate(p) {
     calibration: { ...cal, capacity },
     phases,
     unplanned,
-    total: { low: half(phases.reduce((s, x) => s + x.low, 0)), high: half(phases.reduce((s, x) => s + x.high, 0)), weeks: [half(cum[0]), half(cum[1])], endDate: cal.start ? cum.map((w) => addDays(cal.start, Math.ceil(w * 7))) : null },
+    total: { low: half(phases.reduce((s, x) => s + x.low, 0)), high: half(phases.reduce((s, x) => s + x.high, 0)), weeks: [half(cum[0]), half(cum[1])], likely: half(phases.reduce((s, x) => s + x.likely, 0)), likelyWeeks: half(cumLikely), endDateLikely: cal.start ? addDays(cal.start, Math.ceil(cumLikely * 7)) : null, endDate: cal.start ? cum.map((w) => addDays(cal.start, Math.ceil(w * 7))) : null },
     gapCost,
   };
 }
@@ -152,10 +157,10 @@ export function renderEstimateJson(p) {
     ideal_days_per_week: half(c.capacity),
     calibration: { samples: c.samples, factor: Math.round(c.factor * 100) / 100 },
     start: c.start,
-    total: { low_days: e.total.low, high_days: e.total.high, low_weeks: e.total.weeks[0], high_weeks: e.total.weeks[1], end_date_low: e.total.endDate?.[0] ?? null, end_date_high: e.total.endDate?.[1] ?? null },
+    total: { low_days: e.total.low, high_days: e.total.high, low_weeks: e.total.weeks[0], high_weeks: e.total.weeks[1], likely_high_days: e.total.likely, likely_high_weeks: e.total.likelyWeeks, end_date_likely: e.total.endDateLikely, end_date_low: e.total.endDate?.[0] ?? null, end_date_high: e.total.endDate?.[1] ?? null },
     phases: e.phases.map((ph) => ({
       id: ph.id, name: ph.name, low_days: ph.low, high_days: ph.high, low_weeks: ph.weeks[0], high_weeks: ph.weeks[1],
-      end_week_low: ph.endWeek[0], end_week_high: ph.endWeek[1], end_date_low: ph.endDate?.[0] ?? null, end_date_high: ph.endDate?.[1] ?? null,
+      likely_high_days: ph.likely, likely_high_weeks: ph.likelyWeeks, end_date_likely: ph.endDateLikely ?? null, end_week_low: ph.endWeek[0], end_week_high: ph.endWeek[1], end_date_low: ph.endDate?.[0] ?? null, end_date_high: ph.endDate?.[1] ?? null,
       setup_days: ph.setup ? { low: c.coef.setup[0], high: c.coef.setup[1] } : null,
       stabilize_share: { low: c.coef.stabilize[0], high: c.coef.stabilize[1] },
       items: ph.items.map(item),
