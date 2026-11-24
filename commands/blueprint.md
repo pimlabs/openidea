@@ -13,7 +13,7 @@ Arguments from the user (optional, e.g. limit to certain ideas or a category): $
 ## Process
 
 1. Read `BRIEF.md`, every active idea (`captured`, `ready`, `parked` only for context), resolved and `accepted_risk` gaps (their resolutions are now facts), and the existing `blueprint/blueprint.json` if any. Reuse existing element ids wherever the meaning is unchanged, so links and comments stay stable.
-2. Derive the blueprint per schema 3.9: actors, entities, permissions, flows, screens, integrations, nfr. Every element lists the idea ids it comes from in `derived_from`.
+2. Derive the blueprint per schema 3.9: actors, entities, permissions, flows, screens, integrations, nfr. Every element lists the idea ids it comes from in `derived_from`. For every entity that has a status, define `states` and `transitions`, naming the triggering `flow` when one exists; leave a transition's trigger out rather than invent one.
 3. **Derivation probe** (section 10.1): while deriving, whenever the app clearly needs something no idea states (an actor, an entity, a permission, a step), add it with `"derived_from": []` and `"assumption": true`. Do not hide it inside another element.
 4. Fill every mandatory slot from the sources. When the sources do not say, write `"TBD"`. **Never invent** a lifecycle, a failure scenario, or a permission to make the blueprint look complete: a `TBD` is a finding, an invented value is a hidden blind spot.
 5. Set `"generated"` to today's date. Write `openidea/blueprint/blueprint.json` in full (it is a derived file, never patched by hand).
@@ -22,13 +22,14 @@ Arguments from the user (optional, e.g. limit to certain ideas or a category): $
    - each `assumption: true` element,
    - each `TBD` slot whose absence would change the build,
    - each permission conflict,
-   - each active feature idea that produced no element (`idea-not-in-blueprint`).
+   - each active feature idea that produced no element (`idea-not-in-blueprint`),
+   - each unreachable state or untriggered transition that changes what gets built (`state-unreachable`, `transition-no-flow`).
    Check `openidea/gaps/` first and update an existing gap instead of creating a duplicate. Fill all four body sections, including a concrete proposed validation (section 10.3).
-8. Run `openidea index` and `openidea dashboard`.
+8. Run `openidea diagrams`, `openidea index`, and `openidea dashboard`.
 
 ## Output
 
-- `openidea/blueprint/blueprint.json`
+- `openidea/blueprint/blueprint.json` and the generated `openidea/blueprint/diagrams.md` (feature list, context, activity, and state diagrams)
 - New or updated `openidea/gaps/*.md` (status `open`)
 - Regenerated `openidea/ideas/INDEX.md` and `openidea/dashboard/index.html`
 

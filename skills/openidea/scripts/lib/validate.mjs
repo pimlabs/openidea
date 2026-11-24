@@ -208,6 +208,22 @@ export function validateProject(p) {
     const has = (kind, id) => idsByKind[kind]?.has(id);
     for (const f of p.blueprint.flows || []) if (isFilled(f.actor) && !has('actors', f.actor)) add('error', 'bp-ref', bpFile, `flow "${f.id}" names actor "${f.actor}", which is not in actors.`);
     for (const s of p.blueprint.screens || []) for (const fl of s.flows || []) if (!has('flows', fl)) add('error', 'bp-ref', bpFile, `screen "${s.id}" names flow "${fl}", which is not in flows.`);
+    for (const e of p.blueprint.entities || []) {
+      const states = Array.isArray(e.states) ? e.states : null;
+      const transitions = Array.isArray(e.transitions) ? e.transitions : [];
+      if (!states) {
+        if ((e.attributes || []).some((x) => /^(status|state)$/i.test(String(x)))) add('warning', 'entity-states-missing', bpFile, `entity "${e.id}" has a status attribute but no states: which statuses exist, and what moves between them?`);
+        continue;
+      }
+      const incoming = new Set();
+      for (const t of transitions) {
+        for (const end of ['from', 'to']) if (!states.includes(t[end])) add('error', 'bp-ref', bpFile, `entity "${e.id}" transition ${t.from} -> ${t.to}: "${t[end]}" is not one of its states.`);
+        incoming.add(t.to);
+        if (isFilled(t.flow) && !has('flows', t.flow)) add('error', 'bp-ref', bpFile, `entity "${e.id}" transition ${t.from} -> ${t.to} names flow "${t.flow}", which is not in flows.`);
+        if (!isFilled(t.flow)) add('warning', 'transition-no-flow', bpFile, `entity "${e.id}": nothing triggers ${t.from} -> ${t.to}. Which flow, actor, or schedule moves it?`);
+      }
+      states.slice(1).forEach((st) => { if (!incoming.has(st)) add('warning', 'state-unreachable', bpFile, `entity "${e.id}": state "${st}" can never be reached (no transition leads to it).`); });
+    }
     const perms = new Map();
     for (const pm of p.blueprint.permissions || []) {
       if (!has('actors', pm.actor)) add('error', 'bp-ref', bpFile, `permission names actor "${pm.actor}", which is not in actors.`);

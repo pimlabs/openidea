@@ -81,7 +81,11 @@ test('two ideas giving opposite permissions is a conflict', () => {
 
 test('a blueprint element with no source must be marked as an assumption', () => {
   const d = copyFixture();
-  edit(d, 'blueprint/blueprint.json', (s) => s.replace('"derived_from": [], "assumption": true', '"derived_from": []'));
+  edit(d, 'blueprint/blueprint.json', (s) => {
+    const bp = JSON.parse(s);
+    delete bp.entities.find((e) => e.id === 'chair').assumption;
+    return JSON.stringify(bp);
+  });
   assert.ok(codes(d).includes('bp-untraced'));
 });
 
@@ -108,4 +112,29 @@ test('client dashboard leaks no discovery material, chores, or checks', () => {
   const internal = renderDashboard(p, validateProject(p));
   assert.match(internal, /kickoff/);
   assert.match(internal, /migrate-spreadsheet/);
+});
+
+test('a transition to an unknown state is an error; unreachable states and untriggered transitions are flagged', async () => {
+  const d = copyFixture();
+  const all = () => validateProject(loadProject(d));
+  assert.ok(all().some((i) => i.code === 'state-unreachable' && /no_show/.test(i.message)));
+  assert.ok(all().some((i) => i.code === 'transition-no-flow'));
+  edit(d, 'blueprint/blueprint.json', (s) => s.replace('"to": "completed"', '"to": "done"'));
+  assert.ok(codes(d).includes('bp-ref'));
+});
+
+test('diagrams mark undefined branches and unreachable states, and list features', async () => {
+  const { activityDiagram, stateDiagram, features, renderDiagramsMd } = await import('../skills/openidea/scripts/lib/diagrams.mjs');
+  const p = loadProject(FIXTURE);
+  const occ = p.blueprint.flows.find((f) => f.id === 'view-occupancy');
+  assert.match(activityDiagram(occ), /failure: not defined/);
+  assert.match(activityDiagram(occ), /class .*fail0.* missing/);
+  const booking = p.blueprint.entities.find((e) => e.id === 'booking');
+  assert.match(stateDiagram(booking), /class s_no_show missing/);
+  const f = features(p, []);
+  assert.equal(f.length, 2);
+  assert.deepEqual(f.find((x) => x.id === 'view-occupancy').missing, ['scenario: failure', 'scenario: empty state']);
+  const md = renderDiagramsMd(p, 'Klinik', []);
+  assert.equal(md, renderDiagramsMd(loadProject(FIXTURE), 'Klinik', []));
+  assert.match(md, /```mermaid\nflowchart LR/);
 });

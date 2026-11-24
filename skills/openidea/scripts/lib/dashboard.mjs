@@ -2,6 +2,7 @@
 // The markdown files stay the source of truth; this is a read-only view of them.
 import { analyze } from './analyze.mjs';
 import { BLUEPRINT_KINDS, depthReport } from './validate.mjs';
+import { features, contextDiagram, activityDiagram, stateDiagram } from './diagrams.mjs';
 
 function payload(p, issues, mode) {
   const client = mode === 'client';
@@ -21,9 +22,19 @@ function payload(p, issues, mode) {
       ? { data: { id: g.data.id, kind: g.data.kind, impact: g.data.impact, confidence: g.data.confidence, status: g.data.status, question: g.data.question, ideas: (g.data.ideas || []).filter((id) => visibleIdeas.has(id)) }, body: '' }
       : { file: g.file, data: g.data, body: g.body });
   const brief = p.brief && !p.brief.error ? { data: p.brief.data, body: p.brief.body } : null;
+  const project = brief?.body.match(/^#\s+(.+)$/m)?.[1] || 'OpenIdea project';
+  const bp = p.blueprint;
+  const diagrams = bp ? {
+    context: contextDiagram(bp, project),
+    activity: (bp.flows || []).map((f) => ({ id: f.id, name: f.name || f.id, src: activityDiagram(f) })),
+    states: (bp.entities || []).map((e) => ({ id: e.id, name: e.name || e.id, src: stateDiagram(e) })).filter((x) => x.src),
+  } : null;
+  const featureList = features(p, a.open).map((f) => ({ ...f, ideas: f.ideas.filter((id) => !client || visibleIdeas.has(id)) }));
   return {
     mode,
-    project: brief?.body.match(/^#\s+(.+)$/m)?.[1] || 'OpenIdea project',
+    project,
+    diagrams,
+    features: featureList,
     brief,
     ideas,
     gaps,
@@ -107,6 +118,12 @@ button:hover{border-color:var(--accent);color:var(--accent)}
 .toc{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .depth{height:8px;background:var(--sunk);border-radius:99px;overflow:hidden;margin-top:8px}.depth span{display:block;height:100%;background:var(--accent)}
 .back{font-size:13px}
+.diagram{margin-bottom:12px}
+pre.mermaid{margin:0;background:none;text-align:center}
+pre.mermaid svg{max-width:100%;height:auto}
+pre.mermaid.src{text-align:left;white-space:pre-wrap;font:12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--sunk);padding:10px;border-radius:8px;color:var(--muted)}
+.offline-note{font-size:12.5px;color:var(--amber)}
+.miss-t{color:var(--red);font-weight:600;font-size:13px}
 @media (max-width:640px){
 header{position:static}
 .bar{gap:8px;padding-top:max(10px,env(safe-area-inset-top))}
@@ -192,7 +209,7 @@ document.addEventListener('click',function(e){var b=e.target.closest('[data-copy
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){fallback(t);done();});}else{fallback(t);done();}});
 function fallback(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();}
 
-var PAGES = [['overview','Overview'],['queue','Decision queue'],['ideas','Ideas'],['blueprint','Blueprint'],['roadmap','Roadmap']];
+var PAGES = [['overview','Overview'],['queue','Decision queue'],['ideas','Ideas'],['features','Features'],['blueprint','Blueprint'],['diagrams','Diagrams'],['roadmap','Roadmap']];
 if(!CLIENT) PAGES.push(['issues','Checks']);
 document.getElementById('brand').innerHTML = esc(D.project)+'<small>OpenIdea</small>';
 var modeEl = document.getElementById('mode'); modeEl.textContent = CLIENT?'Client view':'Internal view'; if(CLIENT) modeEl.className='mode client';
@@ -362,14 +379,53 @@ function labelCells(root){
   });
 }
 new MutationObserver(function(ms){ms.forEach(function(m){[].forEach.call(m.addedNodes,function(n){if(n.nodeType===1)labelCells(n.parentNode||n);});});}).observe(app,{childList:true,subtree:true});
+function features(){
+  var h = '<h1>Features</h1><p class="lede">One feature per flow in the blueprint: who uses it, on which screens, what done looks like, and what is still open or undefined.</p>';
+  if(!D.features.length) return h+'<p class="empty">No blueprint flows yet. Run /openidea:blueprint.</p>';
+  h += '<table><thead><tr><th>Feature</th><th>Actor</th><th>Status</th><th>Screens</th><th>Done looks like</th><th>Open gaps</th><th>Milestone</th><th>Not defined</th></tr></thead><tbody>';
+  D.features.forEach(function(f){
+    h += '<tr><td><a href="#diagrams/'+encodeURIComponent(f.id)+'">'+esc(f.name)+'</a>'+(f.assumption?' '+pill('assumption'):'')+'<div class="meta">from '+(f.ideas.map(ideaLink).join(', ')||'no idea')+'</div></td>'+
+      '<td>'+esc(f.actor||'')+'</td><td>'+f.statuses.map(function(x){return pill(x);}).join(' ')+'</td><td>'+esc(f.screens.join(', '))+'</td><td>'+esc(f.done.join(' / '))+'</td>'+
+      '<td>'+f.gaps.map(gapLink).join(', ')+'</td><td>'+esc(f.milestones.join(', '))+'</td><td>'+(f.missing.length?'<span class="miss-t">'+esc(f.missing.join(', '))+'</span>':'')+'</td></tr>';
+  });
+  return h+'</tbody></table>';
+}
+function diagramBlock(title, src, sub){
+  return '<div class="card diagram"><h3 style="margin-top:0">'+esc(title)+'</h3>'+(sub?'<p class="meta">'+sub+'</p>':'')+'<pre class="mermaid">'+esc(src)+'</pre></div>';
+}
+function diagrams(focus){
+  var h = '<h1>Diagrams</h1><p class="lede">Generated from the blueprint by code, never drawn by hand. Red nodes are steps, branches, or states nobody has defined yet: each is a blind spot to resolve.</p>';
+  if(!D.diagrams) return h+'<p class="empty">No blueprint yet. Run /openidea:blueprint.</p>';
+  h += '<div class="toc"><a class="chip" href="#diagrams">All</a><a class="chip" href="#diagrams/context">System context</a>'+D.diagrams.activity.map(function(a){return '<a class="chip" href="#diagrams/'+encodeURIComponent(a.id)+'">'+esc(a.name)+'</a>';}).join('')+D.diagrams.states.map(function(a){return '<a class="chip" href="#diagrams/state-'+encodeURIComponent(a.id)+'">'+esc(a.name)+' states</a>';}).join('')+'</div>';
+  if(!focus || focus==='context') h += '<h2>System context</h2>'+diagramBlock('Who and what the system talks to', D.diagrams.context, 'Actors on the left, external systems with the direction of data. Container architecture is a design decision and belongs in the OpenSpec design, not here.');
+  var acts = D.diagrams.activity.filter(function(a){return !focus||focus===a.id;});
+  if(acts.length) h += '<h2>Activity per flow</h2>'+acts.map(function(a){return diagramBlock(a.name, a.src);}).join('');
+  var sts = D.diagrams.states.filter(function(a){return !focus||focus==='state-'+a.id;});
+  if(sts.length) h += '<h2>State machines</h2>'+sts.map(function(a){return diagramBlock(a.name, a.src, 'Red states can never be reached.');}).join('');
+  if(!focus && !D.diagrams.states.length) h += '<h2>State machines</h2><p class="empty">No entity defines states yet. Entities with a status attribute should.</p>';
+  return h;
+}
+var mermaidState = 'idle';
+function drawMermaid(){
+  var nodes = app.querySelectorAll('pre.mermaid'); if(!nodes.length) return;
+  if(window.mermaid){ try{ window.mermaid.run({nodes:nodes}); }catch(e){} return; }
+  if(mermaidState==='failed'){ offline(nodes); return; }
+  if(mermaidState==='loading') return;
+  mermaidState='loading';
+  var sc=document.createElement('script'); sc.src='https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js';
+  sc.onload=function(){ mermaidState='ready'; var dark=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches; window.mermaid.initialize({startOnLoad:false,securityLevel:'strict',theme:dark?'dark':'neutral',flowchart:{useMaxWidth:true},state:{useMaxWidth:true}}); drawMermaid(); };
+  sc.onerror=function(){ mermaidState='failed'; offline(app.querySelectorAll('pre.mermaid')); };
+  document.head.appendChild(sc);
+}
+function offline(nodes){ [].forEach.call(nodes,function(n){ if(n.previousElementSibling&&n.previousElementSibling.className==='offline-note')return; var p=document.createElement('p'); p.className='offline-note'; p.textContent='Offline: the diagram library could not load, so the Mermaid source is shown. It renders on GitHub in blueprint/diagrams.md.'; n.parentNode.insertBefore(p,n); n.classList.add('src'); }); }
 function route(){
   var parts = (location.hash.replace(/^#/,'')||'overview').split('/').map(decodeURIComponent);
   var page = parts[0], html;
   if(page==='queue') html=queue(); else if(page==='gap') html=gap(parts[1]); else if(page==='ideas') html=ideas(); else if(page==='idea') html=idea(parts[1]);
-  else if(page==='blueprint') html=blueprint(parts[1],parts[2]); else if(page==='roadmap') html=roadmap(); else if(page==='issues'&&!CLIENT) html=issues(); else {page='overview';html=overview();}
+  else if(page==='blueprint') html=blueprint(parts[1],parts[2]); else if(page==='features') html=features(); else if(page==='diagrams') html=diagrams(parts[1]); else if(page==='roadmap') html=roadmap(); else if(page==='issues'&&!CLIENT) html=issues(); else {page='overview';html=overview();}
   var navKey = {gap:'queue',idea:'ideas'}[page]||page;
   document.getElementById('nav').innerHTML = PAGES.map(function(p){return '<a href="#'+p[0]+'"'+(p[0]===navKey?' class="on"':'')+'>'+p[1]+'</a>';}).join('');
-  app.innerHTML = html; labelCells(app); window.scrollTo(0,0);
+  app.innerHTML = html; labelCells(app); drawMermaid(); window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route); route();
 })();

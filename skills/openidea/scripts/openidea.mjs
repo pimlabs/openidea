@@ -7,6 +7,8 @@ import { loadProject } from './lib/load.mjs';
 import { validateProject } from './lib/validate.mjs';
 import { renderIndex } from './lib/indexmd.mjs';
 import { renderDashboard } from './lib/dashboard.mjs';
+import { renderDiagramsMd } from './lib/diagrams.mjs';
+import { openGaps } from './lib/analyze.mjs';
 
 const HELP = `openidea <command> [options]
 
@@ -14,6 +16,8 @@ Commands:
   validate     Check schemas, status/location, dependencies, gaps, gating, roadmap, blueprint.
                Exits 1 when any error is found.
   index        Regenerate openidea/ideas/INDEX.md from a filesystem scan.
+  diagrams     Write openidea/blueprint/diagrams.md: feature list plus Mermaid context,
+               activity, and state diagrams generated from blueprint.json.
   dashboard    Write a self-contained HTML dashboard (default openidea/dashboard/index.html).
 
 Options:
@@ -69,6 +73,14 @@ export function main(argv) {
     const path = join(project.dir, 'ideas', 'INDEX.md');
     write(path, renderIndex(project, issues));
     console.log(`Wrote ${path} (${errors} error(s) listed under Anomalies).`);
+    return 0;
+  }
+  if (cmd === 'diagrams') {
+    if (!project.blueprint) { console.error('No openidea/blueprint/blueprint.json yet. Run /openidea:blueprint first.'); return 1; }
+    const path = join(project.dir, 'blueprint', 'diagrams.md');
+    const name = project.brief?.body?.match(/^#\s+(.+)$/m)?.[1];
+    write(path, renderDiagramsMd(project, name, openGaps(project)));
+    console.log(`Wrote ${path}.`);
     return 0;
   }
   if (cmd === 'dashboard') {

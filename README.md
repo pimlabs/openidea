@@ -66,7 +66,9 @@ Each gap carries a kind (decision, clarification, desirability, feasibility, com
 
 ## Dashboard
 
-`/openidea:dashboard` (or `openidea dashboard`) writes a single self-contained HTML file with: an overview (open high-impact gaps, ideas ready, blueprint depth, hidden assumptions), the decision queue, filterable ideas, the blueprint with a permission matrix and missing details in red, the roadmap with each milestone's gate, and the check results. `--client` writes a separate `client.html` without source quotes, gap details, chores, or checks, safe to send outside.
+`/openidea:dashboard` (or `openidea dashboard`) writes a single self-contained HTML file with: an overview (open high-impact gaps, ideas ready, blueprint depth, hidden assumptions), the decision queue, filterable ideas, a feature list, the blueprint with a permission matrix and missing details in red, diagrams, the roadmap with each milestone's gate, and the check results. It works on phones too.
+
+**Diagrams** are generated from the blueprint by code, never drawn by a model: a system context diagram, an activity diagram per flow (undefined failure or empty-state branches show as red nodes), and a state machine per entity (unreachable states in red). They are Mermaid, so `openidea/blueprint/diagrams.md` renders directly on GitHub; the dashboard loads Mermaid from a CDN and shows the source text when offline. `--client` writes a separate `client.html` without source quotes, gap details, chores, or checks, safe to send outside.
 
 ## CLI
 
@@ -75,6 +77,7 @@ The deterministic part runs as a zero-dependency Node.js (18+) script bundled wi
 ```
 node <plugin>/skills/openidea/scripts/openidea.mjs validate      # exit 1 on any rule violation
 node <plugin>/skills/openidea/scripts/openidea.mjs index         # regenerate ideas/INDEX.md
+node <plugin>/skills/openidea/scripts/openidea.mjs diagrams      # feature list + Mermaid diagrams
 node <plugin>/skills/openidea/scripts/openidea.mjs dashboard [--client]
 ```
 
@@ -101,7 +104,7 @@ Full detail on the philosophy, file schemas, and status lifecycle: see `skills/o
 ```
 .claude-plugin/              plugin + marketplace manifest
 skills/openidea/SKILL.md     schema & principles (shared reference for all commands)
-skills/openidea/scripts/     the openidea CLI (validate, index, dashboard)
+skills/openidea/scripts/     the openidea CLI (validate, index, diagrams, dashboard)
 commands/                    11 commands, /openidea:*
 tests/                       CLI tests and the example project
 ```
