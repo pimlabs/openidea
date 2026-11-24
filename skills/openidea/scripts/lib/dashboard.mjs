@@ -61,11 +61,11 @@ const TEMPLATE = String.raw`<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OpenIdea Dashboard</title>
 <style>
-:root{--bg:#fbfbfa;--surface:#fff;--sunk:#f3f4f2;--border:#e4e5e1;--text:#1b1d1a;--muted:#5d625a;--dim:#8b9087;--accent:#2f6b55;--accent-soft:#e4f0ea;--red:#b3261e;--red-soft:#fbe9e7;--amber:#8a5a00;--amber-soft:#fdf1d8;--green:#1f7a4c;--green-soft:#e3f4ea;--blue:#2457a6;--blue-soft:#e6eefb;--accent-line:rgba(47,107,85,.4);--shadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.07)}
-@media (prefers-color-scheme:dark){:root{--bg:#121412;--surface:#191c19;--sunk:#202420;--border:#2c312c;--text:#e9ece7;--muted:#a7ada4;--dim:#737a70;--accent:#6fc3a0;--accent-soft:#1c2e26;--red:#ff8a80;--red-soft:#33191a;--amber:#f0c060;--amber-soft:#2e2615;--green:#6fd3a0;--green-soft:#17291f;--blue:#8db4f5;--blue-soft:#18233a;--accent-line:rgba(111,195,160,.45);--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35)}}
+:root{--bg:#fafafa;--surface:#fff;--sunk:#f2f3f5;--border:#e2e4e8;--text:#1a1c20;--muted:#5b606b;--dim:#8a909b;--accent:#2558c9;--accent-soft:#eaf0fd;--red:#c0271d;--red-soft:#fdeceb;--amber:#9a6200;--amber-soft:#fdf3dc;--orange:#b4500a;--orange-soft:#fdeee2;--green:#1d7a46;--green-soft:#e4f5ea;--purple:#6d3fb0;--purple-soft:#f1eafb;--gray:#6b7280;--gray-soft:#eef0f3;--accent-line:rgba(37,88,201,.4);--shadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.07)}
+@media (prefers-color-scheme:dark){:root{--bg:#111316;--surface:#181b20;--sunk:#20242a;--border:#2d323a;--text:#e8eaee;--muted:#a6acb6;--dim:#737a85;--accent:#7fa8ff;--accent-soft:#1a2540;--red:#ff8577;--red-soft:#3a1b19;--amber:#f2c35b;--amber-soft:#33290f;--orange:#ffa564;--orange-soft:#3a2414;--green:#5fd394;--green-soft:#15291e;--purple:#c4a2ff;--purple-soft:#2a2040;--gray:#9aa1ad;--gray-soft:#262a31;--accent-line:rgba(127,168,255,.45);--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35)}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{margin:0;overflow-wrap:anywhere;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+body{margin:0;overflow-wrap:break-word;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 a{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:var(--accent-line)}a:hover{text-decoration-color:currentColor}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--sunk);padding:1px 5px;border-radius:4px}
@@ -75,10 +75,10 @@ header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px so
 nav{display:flex;gap:4px;flex-wrap:wrap}
 nav a{color:var(--muted);padding:6px 10px;border-radius:7px;font-size:14px;text-decoration:none}
 nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}nav a:hover{text-decoration:none;color:var(--text)}
-.mode{margin-left:auto;font-size:12px;padding:3px 9px;border-radius:99px;background:var(--sunk);color:var(--muted)}
-.mode.client{background:var(--blue-soft);color:var(--blue)}
+.mode{margin-left:auto;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--amber-soft);color:var(--amber)}
+.mode.client{background:var(--green-soft);color:var(--green)}
 main{max-width:1180px;margin:0 auto;padding:24px max(20px,env(safe-area-inset-right)) calc(80px + env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
-h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}h2{font-size:17px;margin:28px 0 10px}h3{font-size:15px;margin:18px 0 6px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px;letter-spacing:-.015em}h2{font-size:18px;margin:32px 0 12px}h3{font-size:15px;margin:18px 0 6px}
 .lede{color:var(--muted);margin:0 0 20px;max-width:760px}
 .grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
@@ -101,21 +101,23 @@ tbody tr[data-href] td:first-child a{font-weight:600}
 .btn{display:inline-flex;align-items:center;gap:6px;font-weight:600;background:var(--accent);color:var(--surface);border-color:var(--accent)}
 .btn:hover{filter:brightness(1.08);color:var(--surface);border-color:var(--accent)}
 .stat .v{font-size:28px;font-weight:700;letter-spacing:-.02em}.stat .k{color:var(--muted);font-size:13px}.stat .s{color:var(--dim);font-size:12px;margin-top:2px}
+.stat.primary{border-color:var(--red);border-width:2px;background:var(--red-soft)}.stat.primary .v{font-size:40px}
 .stat.bad .v{color:var(--red)}.stat.warn .v{color:var(--amber)}.stat.good .v{color:var(--green)}
 table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:14px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
 th{background:var(--sunk);color:var(--muted);font-weight:600;font-size:12.5px;white-space:nowrap}
 tr:last-child td{border-bottom:0}
-.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--sunk);color:var(--muted);white-space:nowrap}
-.p-high,.p-error,.p-killed,.p-blocked{background:var(--red-soft);color:var(--red)}
-.p-medium,.p-warning,.p-validating,.p-captured,.p-draft,.p-assumption{background:var(--amber-soft);color:var(--amber)}
-.p-low,.p-info,.p-parked{background:var(--sunk);color:var(--muted)}
-.p-ready,.p-resolved,.p-approved,.p-clear{background:var(--green-soft);color:var(--green)}
-.p-promoted,.p-open{background:var(--blue-soft);color:var(--blue)}
-.p-accepted_risk{background:var(--amber-soft);color:var(--amber)}
+.pill{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;line-height:1}
+.sev-red{background:var(--red);color:#fff}.sev-amber{background:var(--amber-soft);color:var(--amber)}.sev-gray{background:var(--gray-soft);color:var(--gray)}
+.st{background:none;border:1px solid var(--border);color:var(--text);font-weight:500}
+.st::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.st-red{color:var(--red);border-color:var(--red-soft)}.st-amber{color:var(--amber);border-color:var(--amber-soft)}.st-orange{color:var(--orange);border-color:var(--orange-soft)}
+.st-green{color:var(--green);border-color:var(--green-soft)}.st-purple{color:var(--purple);border-color:var(--purple-soft)}.st-gray{color:var(--gray);border-color:var(--gray-soft)}
+.tag{background:none;color:var(--muted);font-weight:500;padding:0 2px;height:auto}
+.rank{background:var(--text);color:var(--surface);min-width:26px;justify-content:center}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{font-size:12.5px;padding:2px 8px;border-radius:6px;background:var(--sunk);color:var(--muted)}
-.q{font-size:16px;font-weight:600;margin:4px 0 8px}
+.q{font-size:17px;line-height:1.4;font-weight:600;margin:8px 0}
 .meta{color:var(--muted);font-size:13px}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 input,select{font:inherit;font-size:14px;padding:6px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text)}
@@ -130,13 +132,15 @@ button:hover{border-color:var(--accent);color:var(--accent)}
 .el{margin-bottom:10px}.el h3{margin:0 0 4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .slot{display:grid;grid-template-columns:150px 1fr;gap:8px;font-size:13.5px;padding:3px 0;border-top:1px dashed var(--border)}
 .slot .k{color:var(--muted)}.slot .miss{color:var(--red);font-weight:600}
+.slot>*{min-width:0;overflow-wrap:anywhere}
 .matrix td,.matrix th{text-align:center}.matrix td:first-child,.matrix th:first-child{text-align:left}
-.yes{color:var(--green);font-weight:700}.no{color:var(--red);font-weight:700}.conflict{background:var(--red-soft);color:var(--red);font-weight:700}
+.yes{color:var(--green);font-weight:700}.no{color:var(--gray);font-weight:700}.conflict{background:var(--red);color:#fff;font-weight:700}
 .empty{color:var(--dim);font-style:italic}
 .issue{padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
 .toc{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .depth{height:8px;background:var(--sunk);border-radius:99px;overflow:hidden;margin-top:8px}.depth span{display:block;height:100%;background:var(--accent)}
 .back{font-size:13px}
+.legend-card{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 18px;font-size:13.5px}.legend-card .lg{display:flex;gap:8px;align-items:flex-start}.legend-card p{grid-column:1/-1}.sw{flex:none;width:12px;height:12px;border-radius:3px;margin-top:4px}
 .diagram{margin-bottom:12px}
 pre.mermaid{margin:0;background:none;text-align:center}
 pre.mermaid svg{max-width:100%;height:auto}
@@ -157,6 +161,7 @@ input,select,button{font-size:16px}
 table,thead,tbody{display:block;width:100%}
 table{border:0;background:none}
 thead{display:none}
+td{overflow-wrap:anywhere}
 tbody tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;padding:10px 12px}
 tbody tr[data-href]{padding-right:34px;position:relative}
 tbody tr[data-href]::after{content:'\203A';position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:24px;color:var(--dim)}
@@ -171,6 +176,8 @@ td.pillcell{width:auto;order:1}
 td.pillcell::before{content:none}
 td.emptycell{display:none}
 .matrix td,.matrix th{text-align:left}
+.jump,button{min-height:40px}
+.stat.primary .v{font-size:34px}
 .stat .v{font-size:24px}
 }
 </style>
@@ -185,7 +192,12 @@ var D = JSON.parse(document.getElementById('data').textContent);
 var CLIENT = D.mode === 'client';
 var app = document.getElementById('app');
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-function pill(v,cls){return '<span class="pill p-'+esc(cls||v)+'">'+esc(String(v).replace('_',' '))+'</span>';}
+var SEV={high:'red',error:'red',medium:'amber',warning:'amber',low:'gray',info:'gray'};
+var ST={open:'red',blocked:'red',captured:'amber',validating:'amber',draft:'amber',assumption:'amber',attention:'amber',accepted_risk:'orange',ready:'green',resolved:'green',approved:'green',clear:'green',promoted:'purple',parked:'gray',killed:'gray',dismissed:'gray',merged:'gray',split:'gray'};
+var ST_COLOR={red:'var(--red)',amber:'var(--amber)',orange:'var(--orange)',green:'var(--green)',purple:'var(--purple)',gray:'var(--gray)'};
+function pill(v,cls){var k=cls||v,c;
+  if(k==='tag') c='pill tag'; else if(k==='rank') c='pill rank'; else if(SEV[k]) c='pill sev-'+SEV[k]; else if(ST[k]) c='pill st st-'+ST[k]; else c='pill tag';
+  return '<span class="'+c+'">'+esc(String(v).replace(/_/g,' '))+'</span>';}
 function filled(v){if(v==null)return false;if(Array.isArray(v))return v.length>0;if(typeof v==='string')return v.trim()!==''&&v.trim().toUpperCase()!=='TBD';return true;}
 function get(o,p){return p.split('.').reduce(function(x,k){return x==null?undefined:x[k];},o);}
 function inline(s){
@@ -241,7 +253,7 @@ function fallback(t){var ta=document.createElement('textarea');ta.value=t;docume
 var PAGES = [['overview','Overview'],['queue','Decision queue'],['ideas','Ideas'],['features','Features'],['blueprint','Blueprint'],['diagrams','Diagrams'],['roadmap','Roadmap']];
 if(!CLIENT) PAGES.push(['issues','Checks']);
 document.getElementById('brand').innerHTML = esc(D.project)+'<small>OpenIdea</small>';
-var modeEl = document.getElementById('mode'); modeEl.textContent = CLIENT?'Client view':'Internal view'; if(CLIENT) modeEl.className='mode client';
+var modeEl = document.getElementById('mode'); modeEl.textContent = CLIENT?'Client view \u00b7 safe to share':'Internal \u00b7 do not share'; if(CLIENT) modeEl.className='mode client';
 document.title = D.project + ' · OpenIdea';
 
 function overview(){
@@ -249,13 +261,13 @@ function overview(){
   var depthPct = D.depth && D.depth.score!=null ? Math.round(D.depth.score*100) : null;
   var ready = (c.byStatus.ready||0), cap = (c.byStatus.captured||0);
   h += '<div class="grid g4">';
-  h += '<div class="card stat '+(c.openHigh?'bad':'good')+'" data-href="queue" tabindex="0"><div class="v">'+c.openHigh+'</div><div class="k">Open high-impact gaps</div><div class="s">'+((c.gapStatus.open||0)+(c.gapStatus.validating||0))+' open in total</div></div>';
+  h += '<div class="card stat '+(c.openHigh?'bad primary':'good')+'" data-href="queue" tabindex="0"><div class="v">'+c.openHigh+'</div><div class="k">Open high-impact gaps</div><div class="s">'+((c.gapStatus.open||0)+(c.gapStatus.validating||0))+' open in total</div></div>';
   h += '<div class="card stat" data-href="ideas" tabindex="0"><div class="v">'+ready+' / '+(ready+cap)+'</div><div class="k">Ideas ready</div><div class="s">'+cap+' still captured</div></div>';
-  h += '<div class="card stat '+(depthPct==null?'':depthPct<70?'warn':'good')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+(depthPct==null?'–':depthPct+'%')+'</div><div class="k">Blueprint depth</div><div class="s">'+(D.depth?D.depth.filled+'/'+D.depth.total+' mandatory slots':'No blueprint yet')+'</div>'+(depthPct==null?'':'<div class="depth"><span style="width:'+depthPct+'%"></span></div>')+'</div>';
+  h += '<div class="card stat '+(depthPct==null?'':depthPct<60?'bad':depthPct<85?'warn':'good')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+(depthPct==null?'–':depthPct+'%')+'</div><div class="k">Blueprint depth</div><div class="s">'+(D.depth?D.depth.filled+'/'+D.depth.total+' mandatory slots':'No blueprint yet')+'</div>'+(depthPct==null?'':'<div class="depth"><span style="width:'+depthPct+'%;background:'+(depthPct>=85?'var(--green)':depthPct>=60?'var(--amber)':'var(--red)')+'"></span></div>')+'</div>';
   h += '<div class="card stat '+(D.assumptions?'warn':'')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+D.assumptions+'</div><div class="k">Hidden assumptions</div><div class="s">Blueprint elements with no source idea</div></div>';
   if(!CLIENT) h += '<div class="card stat '+(c.errors?'bad':'good')+'" data-href="issues" tabindex="0"><div class="v">'+c.errors+'</div><div class="k">Check errors</div><div class="s">'+c.warnings+' warnings</div></div>';
   h += '</div>';
-  var order=[['ready','var(--green)'],['captured','var(--amber)'],['parked','var(--dim)'],['promoted','var(--blue)'],['merged','var(--border)'],['split','var(--border)'],['killed','var(--red)']];
+  var order=[['ready','var(--green)'],['captured','var(--amber)'],['parked','var(--gray)'],['promoted','var(--purple)'],['merged','var(--gray-soft)'],['split','var(--gray-soft)'],['killed','var(--dim)']];
   var total = order.reduce(function(s,o){return s+(c.byStatus[o[0]]||0);},0);
   h += '<h2>Ideas by status</h2><div class="card">';
   if(total){h+='<div class="bar-status">'+order.map(function(o){var n=c.byStatus[o[0]]||0;return n?'<span title="'+o[0]+': '+n+'" style="width:'+(n/total*100)+'%;background:'+o[1]+'"></span>':'';}).join('')+'</div>';
@@ -264,6 +276,14 @@ function overview(){
   h += '</div>';
   h += '<h2>Milestones</h2>' + milestoneTable();
   h += '<h2>Decide next</h2>' + queueCards(D.queue.slice(0,3));
+  h += '<h2>How to read this dashboard</h2><div class="card legend-card"><div class="lg"><span class="sw" style="background:var(--red)"></span><div><strong>Red</strong>: needs a decision or blocks progress (open gap, high impact, error, not defined)</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--amber)"></span><div><strong>Amber</strong>: in progress or worth a look (captured, validating, draft, medium, warning)</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--orange)"></span><div><strong>Orange</strong>: risk knowingly accepted</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--green)"></span><div><strong>Green</strong>: done or safe (ready, resolved, approved, gate clear)</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--purple)"></span><div><strong>Purple</strong>: handed off to OpenSpec (promoted)</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--gray)"></span><div><strong>Grey</strong>: inactive or low (parked, killed, dismissed, low impact)</div></div>'+
+    '<div class="lg"><span class="sw" style="background:var(--accent)"></span><div><strong>Blue</strong>: clickable. A card or row with \u203a opens</div></div>'+
+    '<p class="meta" style="margin:8px 0 0">Filled labels show <strong>severity</strong>, labels with a dot show <strong>status</strong>, plain grey text is just a <strong>tag</strong>.</p></div>';
   if(D.brief) h += '<h2>Brief</h2><div class="card md">'+md(D.brief.body.replace(/^#\s+.*$/m,''))+'</div>';
   return h;
 }
@@ -277,7 +297,7 @@ function queueCards(ids){
   if(!ids.length) return '<p class="empty">No open gaps. Run /openidea:evaluate to look for blind spots.</p>';
   return '<div class="grid g2">'+ids.map(function(id,n){var g=gapById[id];if(!g)return '';var d=g.data;
     var body = CLIENT?'':sectionOf(g.body,'Proposed validation')||sectionOf(g.body,'Usulan validasi');
-    return '<div class="card" data-href="gap/'+encodeURIComponent(id)+'" tabindex="0"><div class="chips">'+pill('#'+(n+1),'low')+pill(d.impact)+pill(d.kind,'low')+pill(d.status)+'</div><div class="q">'+esc(d.question)+'</div>'+
+    return '<div class="card" data-href="gap/'+encodeURIComponent(id)+'" tabindex="0"><div class="chips">'+pill('#'+(n+1),'rank')+pill(d.impact)+pill(d.kind,'tag')+pill(d.status)+'</div><div class="q">'+esc(d.question)+'</div>'+
       (body?'<div class="md meta">'+md(body)+'</div>':'')+
       '<div class="meta">Ideas: '+((d.ideas||[]).map(function(x){return esc(x);}).join(', ')||'project-wide')+'</div>'+
       (CLIENT?'':copyBtn('/openidea:resolve '+id))+'</div>';}).join('')+'</div>';
@@ -301,7 +321,7 @@ function gapTable(list){
 function gap(id){
   var g = gapById[id]; if(!g) return '<p>Gap not found.</p>';
   var d = g.data;
-  var h = '<p class="back"><a href="#queue">← Decision queue</a></p><h1>'+esc(d.id)+'</h1><div class="chips">'+pill(d.impact)+pill(d.kind,'low')+pill('confidence '+d.confidence,'low')+pill(d.status)+(d.found_by?pill('found by '+d.found_by,'low'):'')+'</div>';
+  var h = '<p class="back"><a href="#queue">← Decision queue</a></p><h1>'+esc(d.id)+'</h1><div class="chips">'+pill(d.impact)+pill(d.kind,'tag')+pill('confidence '+d.confidence,'tag')+pill(d.status)+(d.found_by?pill('found by '+d.found_by,'tag'):'')+'</div>';
   h += '<div class="q" style="margin-top:12px">'+esc(d.question)+'</div>';
   if(!CLIENT) h += copyBtn('/openidea:resolve '+d.id);
   h += '<p class="meta">Ideas: '+((d.ideas||[]).map(ideaLink).join(', ')||'project-wide')+(d.sources&&d.sources.length?' · Sources: '+d.sources.map(function(s){return '<code>'+esc(s)+'</code>';}).join(' '):'')+'</p>';
@@ -317,14 +337,14 @@ function ideas(){
     function draw(){var qv=q.value.toLowerCase();var list=D.ideas.filter(function(i){return (!s.value||i.data.status===s.value)&&(!c.value||i.data.category===c.value)&&(!qv||(i.data.id+' '+(i.data.category||'')).toLowerCase().indexOf(qv)>=0);});
       var openBy={};D.gaps.filter(openGap).forEach(function(g){(g.data.ideas||[]).forEach(function(id){openBy[id]=(openBy[id]||0)+1;});});
       document.getElementById('itable').innerHTML = list.length?'<table><thead><tr><th>Idea</th><th>Status</th><th>Type</th><th>Category</th><th>Updated</th><th>Open gaps</th></tr></thead><tbody>'+list.map(function(i){var d=i.data;
-        return '<tr><td>'+ideaLink(d.id)+(d.needs_clarification?' '+pill('needs clarification','warning'):'')+'</td><td>'+pill(d.status)+'</td><td>'+esc(d.type||'feature')+'</td><td>'+esc(d.category||'')+'</td><td>'+esc(d.updated||'')+'</td><td>'+(openBy[d.id]?pill(openBy[d.id]+' open gap'+(openBy[d.id]>1?'s':''),'open'):'')+'</td></tr>';}).join('')+'</tbody></table>':'<p class="empty">No ideas match.</p>';}
+        return '<tr><td>'+ideaLink(d.id)+(d.needs_clarification?' '+pill('needs clarification','attention'):'')+'</td><td>'+pill(d.status)+'</td><td>'+esc(d.type||'feature')+'</td><td>'+esc(d.category||'')+'</td><td>'+esc(d.updated||'')+'</td><td>'+(openBy[d.id]?pill(openBy[d.id]+' open gap'+(openBy[d.id]>1?'s':''),'open'):'')+'</td></tr>';}).join('')+'</tbody></table>':'<p class="empty">No ideas match.</p>';}
     [q,s,c].forEach(function(e){e.addEventListener('input',draw);});draw();},0);
   return h;
 }
 function idea(id){
   var i = ideaById[id]; if(!i) return '<p>Idea not found.</p>';
   var d = i.data;
-  var h = '<p class="back"><a href="#ideas">← Ideas</a></p><h1>'+esc(d.id)+'</h1><div class="chips">'+pill(d.status)+pill(d.type||'feature','low')+(d.category?'<span class="chip">'+esc(d.category)+'</span>':'')+(d.needs_clarification?pill('needs clarification','warning'):'')+'</div>';
+  var h = '<p class="back"><a href="#ideas">← Ideas</a></p><h1>'+esc(d.id)+'</h1><div class="chips">'+pill(d.status)+pill(d.type||'feature','tag')+(d.category?'<span class="chip">'+esc(d.category)+'</span>':'')+(d.needs_clarification?pill('needs clarification','attention'):'')+'</div>';
   var ms = D.milestones.filter(function(m){return m.ideas.indexOf(d.id)>=0;})[0];
   var facts = [];
   if(ms) facts.push('Milestone: <strong>'+esc(ms.name)+'</strong>');
