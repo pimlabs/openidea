@@ -76,6 +76,8 @@ nav{display:flex;gap:4px;flex-wrap:wrap}
 nav a{color:var(--muted);padding:6px 10px;border-radius:7px;font-size:14px;text-decoration:none}
 nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}nav a:hover{text-decoration:none;color:var(--text)}
 .mode{margin-left:auto;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--amber-soft);color:var(--amber)}
+.badge{display:inline-block;min-width:18px;margin-left:6px;padding:0 5px;border-radius:99px;background:var(--red);color:#fff;font-size:11px;font-weight:700;line-height:18px;text-align:center}
+details.fold{margin:16px 0}details.fold>summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14px;padding:8px 0;list-style:none}details.fold>summary::-webkit-details-marker{display:none}details.fold>summary::before{content:'\25B8';display:inline-block;margin-right:6px;transition:transform .12s}details.fold[open]>summary::before{transform:rotate(90deg)}
 .mode.client{background:var(--green-soft);color:var(--green)}
 main{max-width:1180px;margin:0 auto;padding:24px max(20px,env(safe-area-inset-right)) calc(80px + env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
 h1{font-size:26px;line-height:1.25;margin:0 0 6px;letter-spacing:-.015em}h2{font-size:18px;margin:32px 0 12px}h3{font-size:15px;margin:18px 0 6px}
@@ -142,7 +144,7 @@ button:hover{border-color:var(--accent);color:var(--accent)}
 .back{font-size:13px}
 .legend-card{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 18px;font-size:13.5px}.legend-card .lg{display:flex;gap:8px;align-items:flex-start}.legend-card p{grid-column:1/-1}.sw{flex:none;width:12px;height:12px;border-radius:3px;margin-top:4px}
 .diagram{margin-bottom:12px}
-pre.mermaid{margin:0;background:none;text-align:center}
+pre.mermaid{margin:0;background:none;text-align:center;white-space:pre-wrap;overflow-wrap:anywhere}
 pre.mermaid svg{max-width:100%;height:auto}
 pre.mermaid.src{text-align:left;white-space:pre-wrap;font:12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--sunk);padding:10px;border-radius:8px;color:var(--muted)}
 .offline-note{font-size:12.5px;color:var(--amber)}
@@ -151,8 +153,10 @@ pre.mermaid.src{text-align:left;white-space:pre-wrap;font:12.5px ui-monospace,SF
 header{position:static}
 .bar{gap:8px;padding-top:max(10px,env(safe-area-inset-top))}
 .mode{margin-left:auto}
-nav{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-nav a{text-align:center;padding:8px 4px;background:var(--sunk);font-size:13px}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:10;display:grid;grid-template-columns:repeat(5,1fr);gap:0;background:var(--surface);border-top:1px solid var(--border);padding:4px max(4px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(4px,env(safe-area-inset-left))}
+nav a{text-align:center;padding:10px 2px;font-size:12.5px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px}
+nav a .badge{margin-left:3px;min-width:16px;line-height:16px;font-size:10.5px}
+main{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
 main{padding-top:16px}
 h1{font-size:21px}
 .slot{grid-template-columns:1fr;gap:0}
@@ -177,6 +181,7 @@ td.pillcell::before{content:none}
 td.emptycell{display:none}
 .matrix td,.matrix th{text-align:left}
 .jump,button{min-height:40px}
+.g4{grid-template-columns:1fr 1fr;gap:8px}.stat.primary{grid-column:1/-1}.stat .s{display:none}.stat.primary .s{display:block}.stat .depth{margin-top:6px}
 .stat.primary .v{font-size:34px}
 .stat .v{font-size:24px}
 }
@@ -242,49 +247,45 @@ document.addEventListener('click',function(e){
   if(e.target.closest('a,button,input,select,textarea,[data-copy]'))return;
   var c=e.target.closest('[data-href]'); if(!c)return;
   if(window.getSelection && String(window.getSelection()).length) return;
-  location.hash=c.getAttribute('data-href');
+  go(c.getAttribute('data-href'));
 });
-document.addEventListener('keydown',function(e){var c=e.target.closest&&e.target.closest('[data-href]');if(c&&e.target===c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();location.hash=c.getAttribute('data-href');}});
+function go(h){ if(h.charAt(0)==='@'){var t=document.getElementById(h.slice(1)); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); return;} location.hash=h; }
+document.addEventListener('keydown',function(e){var c=e.target.closest&&e.target.closest('[data-href]');if(c&&e.target===c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();go(c.getAttribute('data-href'));}});
 document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var t=b.getAttribute('data-copy');
   var done=function(){var o=b.textContent;b.textContent='Copied \u2713';setTimeout(function(){b.textContent=o;},1200);};
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){fallback(t);done();});}else{fallback(t);done();}});
 function fallback(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();}
 
-var PAGES = [['overview','Overview'],['queue','Decision queue'],['ideas','Ideas'],['features','Features'],['blueprint','Blueprint'],['diagrams','Diagrams'],['roadmap','Roadmap']];
-if(!CLIENT) PAGES.push(['issues','Checks']);
+// Five sections, in the order a reader asks: what needs me, what does the app do, when does it ship, how is it structured, where did it come from.
+var PAGES = [['overview','Overview'],['features','Features'],['roadmap','Roadmap'],['blueprint','Blueprint'],['ideas','Ideas']];
 document.getElementById('brand').innerHTML = esc(D.project)+'<small>OpenIdea</small>';
 var modeEl = document.getElementById('mode'); modeEl.textContent = CLIENT?'Client view \u00b7 safe to share':'Internal \u00b7 do not share'; if(CLIENT) modeEl.className='mode client';
 document.title = D.project + ' · OpenIdea';
 
 function overview(){
-  var c = D.counts, h = '<h1>'+esc(D.project)+'</h1><p class="lede">How clear and validated this product definition is right now. Regenerate with <code>openidea dashboard</code> after any change.</p>';
+  var c = D.counts, h = '<h1>'+esc(D.project)+'</h1><p class="lede">How clear and validated this product definition is right now, and what needs your decision.</p>';
   var depthPct = D.depth && D.depth.score!=null ? Math.round(D.depth.score*100) : null;
   var ready = (c.byStatus.ready||0), cap = (c.byStatus.captured||0);
   h += '<div class="grid g4">';
-  h += '<div class="card stat '+(c.openHigh?'bad primary':'good')+'" data-href="queue" tabindex="0"><div class="v">'+c.openHigh+'</div><div class="k">Open high-impact gaps</div><div class="s">'+((c.gapStatus.open||0)+(c.gapStatus.validating||0))+' open in total</div></div>';
+  h += '<div class="card stat '+(c.openHigh?'bad primary':'good')+'" '+(D.queue.length?'data-href="@decide" tabindex="0"':'')+'><div class="v">'+c.openHigh+'</div><div class="k">Open high-impact gaps</div><div class="s">'+((c.gapStatus.open||0)+(c.gapStatus.validating||0))+' open in total</div></div>';
   h += '<div class="card stat" data-href="ideas" tabindex="0"><div class="v">'+ready+' / '+(ready+cap)+'</div><div class="k">Ideas ready</div><div class="s">'+cap+' still captured</div></div>';
   h += '<div class="card stat '+(depthPct==null?'':depthPct<60?'bad':depthPct<85?'warn':'good')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+(depthPct==null?'–':depthPct+'%')+'</div><div class="k">Blueprint depth</div><div class="s">'+(D.depth?D.depth.filled+'/'+D.depth.total+' mandatory slots':'No blueprint yet')+'</div>'+(depthPct==null?'':'<div class="depth"><span style="width:'+depthPct+'%;background:'+(depthPct>=85?'var(--green)':depthPct>=60?'var(--amber)':'var(--red)')+'"></span></div>')+'</div>';
   h += '<div class="card stat '+(D.assumptions?'warn':'')+'"'+(D.blueprint?' data-href="blueprint" tabindex="0"':'')+'><div class="v">'+D.assumptions+'</div><div class="k">Hidden assumptions</div><div class="s">Blueprint elements with no source idea</div></div>';
   if(!CLIENT) h += '<div class="card stat '+(c.errors?'bad':'good')+'" data-href="issues" tabindex="0"><div class="v">'+c.errors+'</div><div class="k">Check errors</div><div class="s">'+c.warnings+' warnings</div></div>';
   h += '</div>';
-  var order=[['ready','var(--green)'],['captured','var(--amber)'],['parked','var(--gray)'],['promoted','var(--purple)'],['merged','var(--gray-soft)'],['split','var(--gray-soft)'],['killed','var(--dim)']];
-  var total = order.reduce(function(s,o){return s+(c.byStatus[o[0]]||0);},0);
-  h += '<h2>Ideas by status</h2><div class="card">';
-  if(total){h+='<div class="bar-status">'+order.map(function(o){var n=c.byStatus[o[0]]||0;return n?'<span title="'+o[0]+': '+n+'" style="width:'+(n/total*100)+'%;background:'+o[1]+'"></span>':'';}).join('')+'</div>';
-    h+='<div class="legend">'+order.filter(function(o){return c.byStatus[o[0]];}).map(function(o){return '<span><span class="dot" style="background:'+o[1]+'"></span>'+o[0]+' '+c.byStatus[o[0]]+'</span>';}).join('')+'</div>';}
-  else h+='<span class="empty">No ideas yet.</span>';
-  h += '</div>';
-  h += '<h2>Milestones</h2>' + milestoneTable();
-  h += '<h2>Decide next</h2>' + queueCards(D.queue.slice(0,3));
-  h += '<h2>How to read this dashboard</h2><div class="card legend-card"><div class="lg"><span class="sw" style="background:var(--red)"></span><div><strong>Red</strong>: needs a decision or blocks progress (open gap, high impact, error, not defined)</div></div>'+
+  h += '<h2 id="decide">Decide next</h2>'+queueCards(D.queue);
+  var rest = D.gaps.filter(function(g){return D.queue.indexOf(g.data.id)<0;});
+  if(rest.length) h += '<details class="fold"><summary>All other gaps ('+rest.length+')</summary>'+gapTable(rest)+'</details>';
+  h += '<h2>Milestone gates</h2>' + milestoneTable();
+  h += '<details class="fold"><summary>How to read colours and labels</summary><div class="card legend-card"><div class="lg"><span class="sw" style="background:var(--red)"></span><div><strong>Red</strong>: needs a decision or blocks progress (open gap, high impact, error, not defined)</div></div>'+
     '<div class="lg"><span class="sw" style="background:var(--amber)"></span><div><strong>Amber</strong>: in progress or worth a look (captured, validating, draft, medium, warning)</div></div>'+
     '<div class="lg"><span class="sw" style="background:var(--orange)"></span><div><strong>Orange</strong>: risk knowingly accepted</div></div>'+
     '<div class="lg"><span class="sw" style="background:var(--green)"></span><div><strong>Green</strong>: done or safe (ready, resolved, approved, gate clear)</div></div>'+
     '<div class="lg"><span class="sw" style="background:var(--purple)"></span><div><strong>Purple</strong>: handed off to OpenSpec (promoted)</div></div>'+
     '<div class="lg"><span class="sw" style="background:var(--gray)"></span><div><strong>Grey</strong>: inactive or low (parked, killed, dismissed, low impact)</div></div>'+
     '<div class="lg"><span class="sw" style="background:var(--accent)"></span><div><strong>Blue</strong>: clickable. A card or row with \u203a opens</div></div>'+
-    '<p class="meta" style="margin:8px 0 0">Filled labels show <strong>severity</strong>, labels with a dot show <strong>status</strong>, plain grey text is just a <strong>tag</strong>.</p></div>';
-  if(D.brief) h += '<h2>Brief</h2><div class="card md">'+md(D.brief.body.replace(/^#\s+.*$/m,''))+'</div>';
+    '<p class="meta" style="margin:8px 0 0">Filled labels show <strong>severity</strong>, labels with a dot show <strong>status</strong>, plain grey text is just a <strong>tag</strong>.</p></div></details>';
+  if(D.brief) h += '<details class="fold"><summary>Product brief</summary><div class="card md">'+md(D.brief.body.replace(/^#\s+.*$/m,''))+'</div></details>';
   return h;
 }
 function milestoneTable(){
@@ -293,24 +294,16 @@ function milestoneTable(){
     var gate = m.blockingGaps.length?pill(m.blockingGaps.length+' high gap'+(m.blockingGaps.length>1?'s':'')+' open','blocked'):pill('clear','clear');
     return '<tr><td><strong>'+esc(m.name)+'</strong></td><td><code>'+esc(m.id)+'</code></td><td>'+pill(m.status)+'</td><td>'+gate+(m.blockingGaps.length?'<div class="meta">'+m.blockingGaps.map(gapLink).join(', ')+'</div>':'')+'</td><td>'+m.ideas.map(ideaLink).join(', ')+'</td></tr>';}).join('')+'</tbody></table>';
 }
-function queueCards(ids){
+function queueCards(ids, noRank){
   if(!ids.length) return '<p class="empty">No open gaps. Run /openidea:evaluate to look for blind spots.</p>';
   return '<div class="grid g2">'+ids.map(function(id,n){var g=gapById[id];if(!g)return '';var d=g.data;
     var body = CLIENT?'':sectionOf(g.body,'Proposed validation')||sectionOf(g.body,'Usulan validasi');
-    return '<div class="card" data-href="gap/'+encodeURIComponent(id)+'" tabindex="0"><div class="chips">'+pill('#'+(n+1),'rank')+pill(d.impact)+pill(d.kind,'tag')+pill(d.status)+'</div><div class="q">'+esc(d.question)+'</div>'+
+    return '<div class="card" data-href="gap/'+encodeURIComponent(id)+'" tabindex="0"><div class="chips">'+(noRank?'':pill('#'+(n+1),'rank'))+pill(d.impact)+pill(d.kind,'tag')+pill(d.status)+'</div><div class="q">'+esc(d.question)+'</div>'+
       (body?'<div class="md meta">'+md(body)+'</div>':'')+
       '<div class="meta">Ideas: '+((d.ideas||[]).map(function(x){return esc(x);}).join(', ')||'project-wide')+'</div>'+
       (CLIENT?'':copyBtn('/openidea:resolve '+id))+'</div>';}).join('')+'</div>';
 }
 function sectionOf(body,title){var m=String(body||'').split(/^##\s+/m).filter(function(s){return s.toLowerCase().indexOf(title.toLowerCase())===0;})[0];return m?m.replace(/^[^\n]*\n/,'').trim():'';}
-function queue(){
-  var open = D.gaps.filter(openGap);
-  var h = '<h1>Decision queue</h1><p class="lede">The top '+D.queue.length+' open gaps, ranked by impact × confidence, cheapest validation first. These are the only things a human needs to decide right now.</p>'+queueCards(D.queue);
-  var rest = open.filter(function(g){return D.queue.indexOf(g.data.id)<0;});
-  h += '<h2>All gaps</h2>'+gapTable(D.gaps);
-  if(rest.length) h = h.replace('</p>',' '+rest.length+' more open gaps wait below.</p>');
-  return h;
-}
 function gapTable(list){
   if(!list.length) return '<p class="empty">No gaps recorded.</p>';
   var rank={high:3,medium:2,low:1},st={open:0,validating:1,accepted_risk:2,resolved:3,dismissed:4};
@@ -321,7 +314,7 @@ function gapTable(list){
 function gap(id){
   var g = gapById[id]; if(!g) return '<p>Gap not found.</p>';
   var d = g.data;
-  var h = '<p class="back"><a href="#queue">← Decision queue</a></p><h1>'+esc(d.id)+'</h1><div class="chips">'+pill(d.impact)+pill(d.kind,'tag')+pill('confidence '+d.confidence,'tag')+pill(d.status)+(d.found_by?pill('found by '+d.found_by,'tag'):'')+'</div>';
+  var h = '<p class="back"><a href="#overview">← Overview</a></p><h1>'+esc(d.id)+'</h1><div class="chips">'+pill(d.impact)+pill(d.kind,'tag')+pill('confidence '+d.confidence,'tag')+pill(d.status)+(d.found_by?pill('found by '+d.found_by,'tag'):'')+'</div>';
   h += '<div class="q" style="margin-top:12px">'+esc(d.question)+'</div>';
   if(!CLIENT) h += copyBtn('/openidea:resolve '+d.id);
   h += '<p class="meta">Ideas: '+((d.ideas||[]).map(ideaLink).join(', ')||'project-wide')+(d.sources&&d.sources.length?' · Sources: '+d.sources.map(function(s){return '<code>'+esc(s)+'</code>';}).join(' '):'')+'</p>';
@@ -329,9 +322,15 @@ function gap(id){
   if(g.body && g.body.trim()) h += '<div class="card md" style="margin-top:12px">'+md(g.body)+'</div>';
   return h;
 }
+function statusBar(){
+  var c=D.counts, order=[['ready','var(--green)'],['captured','var(--amber)'],['parked','var(--gray)'],['promoted','var(--purple)'],['merged','var(--gray-soft)'],['split','var(--gray-soft)'],['killed','var(--dim)']];
+  var total = order.reduce(function(s,o){return s+(c.byStatus[o[0]]||0);},0); if(!total) return '';
+  return '<div class="card" style="margin-bottom:12px"><div class="bar-status">'+order.map(function(o){var n=c.byStatus[o[0]]||0;return n?'<span title="'+o[0]+': '+n+'" style="width:'+(n/total*100)+'%;background:'+o[1]+'"></span>':'';}).join('')+'</div>'+
+    '<div class="legend">'+order.filter(function(o){return c.byStatus[o[0]];}).map(function(o){return '<span><span class="dot" style="background:'+o[1]+'"></span>'+o[0]+' '+c.byStatus[o[0]]+'</span>';}).join('')+'</div></div>';
+}
 function ideas(){
   var cats = {}; D.ideas.forEach(function(i){if(i.data.category)cats[i.data.category]=1;});
-  var h = '<h1>Ideas</h1><p class="lede">Every idea on disk, active and archived. Click one for its full definition, its gaps, and what the blueprint derives from it.</p>';
+  var h = '<h1>Ideas</h1><p class="lede">The source of everything else: every idea on disk, active and archived. Open one for its full definition, its gaps, and what the blueprint derives from it.</p>'+statusBar();
   h += '<div class="filters"><input id="fq" placeholder="Search id or category"><select id="fs"><option value="">All statuses</option>'+['captured','ready','parked','promoted','merged','split','killed'].map(function(s){return '<option>'+s+'</option>';}).join('')+'</select><select id="fc"><option value="">All categories</option>'+Object.keys(cats).sort().map(function(c){return '<option>'+esc(c)+'</option>';}).join('')+'</select></div><div id="itable"></div>';
   setTimeout(function(){var q=document.getElementById('fq'),s=document.getElementById('fs'),c=document.getElementById('fc');
     function draw(){var qv=q.value.toLowerCase();var list=D.ideas.filter(function(i){return (!s.value||i.data.status===s.value)&&(!c.value||i.data.category===c.value)&&(!qv||(i.data.id+' '+(i.data.category||'')).toLowerCase().indexOf(qv)>=0);});
@@ -368,7 +367,8 @@ function blueprint(focusKind, focusId){
   var h = '<h1>Blueprint</h1>';
   if(!D.blueprint) return h+'<p class="empty">No blueprint yet. Run /openidea:blueprint to derive one from the ideas.</p>';
   h += '<p class="lede">Derived from the ideas, never edited by hand. Every element shows the ideas it comes from; red slots are mandatory details nobody has defined yet.'+(D.blueprint.generated?' Generated '+esc(D.blueprint.generated)+'.':'')+'</p>';
-  h += '<div class="toc"><a class="jump'+(!focusKind?' on':'')+'" href="#blueprint">All</a>'+Object.keys(D.kinds).map(function(k){var n=(D.blueprint[k]||[]).length;return n?'<a class="jump'+(focusKind===k?' on':'')+'" href="#blueprint/'+k+'">'+esc(D.kinds[k].plural)+' · '+n+'</a>':'';}).join('')+((D.blueprint.permissions||[]).length?'<a class="jump'+(focusKind==='permissions'?' on':'')+'" href="#blueprint/permissions">Permission matrix</a>':'')+'</div>';
+  h += '<div class="toc"><a class="jump'+(!focusKind?' on':'')+'" href="#blueprint">All</a>'+Object.keys(D.kinds).map(function(k){var n=(D.blueprint[k]||[]).length;return n?'<a class="jump'+(focusKind===k?' on':'')+'" href="#blueprint/'+k+'">'+esc(D.kinds[k].plural)+' · '+n+'</a>':'';}).join('')+((D.blueprint.permissions||[]).length?'<a class="jump'+(focusKind==='permissions'?' on':'')+'" href="#blueprint/permissions">Permission matrix</a>':'')+(D.diagrams?'<a class="jump" href="#diagrams">All diagrams</a>':'')+'</div>';
+  if(!focusKind && D.diagrams) h += '<h2>System context</h2>'+diagramBlock('Who and what the system talks to', D.diagrams.context, 'Container architecture is a design decision and belongs in the OpenSpec design, not here.');
   if(!focusKind || focusKind==='permissions') h += matrix();
   Object.keys(D.kinds).forEach(function(k){
     if(focusKind && focusKind!=='permissions' && focusKind!==k) return;
@@ -381,6 +381,8 @@ function blueprint(focusKind, focusId){
       h += '<div class="chips" style="margin:4px 0 8px">'+((el.derived_from||[]).length?'<span class="src">From idea: '+(el.derived_from||[]).map(ideaLink).join(', ')+'</span>':'<span class="pill p-assumption">no source idea</span>')+'</div>';
       slots.filter(function(s){return s!=='name';}).forEach(function(s){var v=get(el,s);h+='<div class="slot"><span class="k">'+esc(s)+'</span>'+(filled(v)?'<span>'+fmt(v)+'</span>':'<span class="miss">Not defined</span>')+'</div>';});
       Object.keys(el).forEach(function(key){if(['id','name','derived_from','assumption'].indexOf(key)>=0)return;if(slots.some(function(s){return s===key||s.indexOf(key+'.')===0;}))return;h+='<div class="slot"><span class="k">'+esc(key)+'</span><span>'+fmt(el[key])+'</span></div>';});
+      var sm = k==='entities' && D.diagrams && D.diagrams.states.filter(function(x){return x.id===el.id;})[0];
+      if(sm) h += '<div class="diagram" style="margin-top:10px"><p class="meta" style="margin:0 0 4px">States (red = unreachable)</p><pre class="mermaid">'+esc(sm.src)+'</pre></div>';
       h += '</div>';
     });
     h += '</div>';
@@ -411,7 +413,7 @@ function roadmap(){
   return h;
 }
 function issues(){
-  var h = '<h1>Checks</h1><p class="lede">Deterministic checks from <code>openidea validate</code>. Errors break a rule; warnings deserve a look.</p>';
+  var h = '<p class="back"><a href="#overview">← Overview</a></p><h1>Checks</h1><p class="lede">Deterministic checks from <code>openidea validate</code>. Errors break a rule; warnings deserve a look.</p>';
   if(!D.issues.length) return h+'<p class="empty">All checks pass.</p>';
   var order={error:0,warning:1,info:2};
   return h+D.issues.slice().sort(function(a,b){return order[a.level]-order[b.level];}).map(function(i){return '<div class="issue">'+pill(i.level)+' <code>'+esc(i.code)+'</code> <span class="meta">'+esc(i.file)+'</span><div>'+esc(i.message)+'</div></div>';}).join('');
@@ -436,17 +438,29 @@ function features(){
   if(!D.features.length) return h+'<p class="empty">No blueprint flows yet. Run /openidea:blueprint.</p>';
   h += '<table><thead><tr><th>Feature</th><th>Actor</th><th>Status</th><th>Screens</th><th>Done looks like</th><th>Open gaps</th><th>Milestone</th><th>Not defined</th></tr></thead><tbody>';
   D.features.forEach(function(f){
-    h += '<tr><td><a href="#diagrams/'+encodeURIComponent(f.id)+'">'+esc(f.name)+'</a>'+(f.assumption?' '+pill('assumption'):'')+'<div class="meta">from '+(f.ideas.map(ideaLink).join(', ')||'no idea')+'</div></td>'+
+    h += '<tr><td><a href="#feature/'+encodeURIComponent(f.id)+'">'+esc(f.name)+'</a>'+(f.assumption?' '+pill('assumption'):'')+'<div class="meta">from '+(f.ideas.map(ideaLink).join(', ')||'no idea')+'</div></td>'+
       '<td>'+esc(f.actor||'')+'</td><td>'+f.statuses.map(function(x){return pill(x);}).join(' ')+'</td><td>'+esc(f.screens.join(', '))+'</td><td>'+esc(f.done.join(' / '))+'</td>'+
       '<td>'+f.gaps.map(gapLink).join(', ')+'</td><td>'+esc(f.milestones.join(', '))+'</td><td>'+(f.missing.length?'<span class="miss-t">'+esc(f.missing.join(', '))+'</span>':'')+'</td></tr>';
   });
   return h+'</tbody></table>';
 }
+function feature(id){
+  var f = D.features.filter(function(x){return x.id===id;})[0]; if(!f) return '<p>Feature not found.</p>';
+  var h = '<p class="back"><a href="#features">← Features</a></p><h1>'+esc(f.name)+'</h1><div class="chips">'+f.statuses.map(function(x){return pill(x);}).join('')+(f.assumption?pill('assumption'):'')+(f.milestones.length?pill(f.milestones.join(', '),'tag'):'')+'</div>';
+  var rows = [['Who',esc(f.actor||'')],['From ideas',f.ideas.map(ideaLink).join(', ')],['Screens',esc(f.screens.join(', '))],['Permissions',esc(f.permissions.join(', '))],['Done looks like',esc(f.done.join(' / '))]];
+  h += '<div class="card" style="margin-top:12px">'+rows.map(function(r){return '<div class="slot"><span class="k">'+r[0]+'</span>'+(r[1]?'<span>'+r[1]+'</span>':'<span class="miss">Not defined</span>')+'</div>';}).join('')+
+    (f.missing.length?'<div class="slot"><span class="k">Not defined yet</span><span class="miss">'+esc(f.missing.join(', '))+'</span></div>':'')+'</div>';
+  if(f.gaps.length) h += '<h2>Open gaps</h2>'+queueCards(f.gaps, true);
+  var a = D.diagrams && D.diagrams.activity.filter(function(x){return x.id===id;})[0];
+  if(a) h += '<h2>Activity</h2>'+diagramBlock(a.name, a.src, 'Red steps or branches are not defined yet.');
+  h += '<p class="meta"><a href="#blueprint/flows/'+encodeURIComponent(id)+'">See the raw blueprint flow</a></p>';
+  return h;
+}
 function diagramBlock(title, src, sub){
   return '<div class="card diagram"><h3 style="margin-top:0">'+esc(title)+'</h3>'+(sub?'<p class="meta">'+sub+'</p>':'')+'<pre class="mermaid">'+esc(src)+'</pre></div>';
 }
 function diagrams(focus){
-  var h = '<h1>Diagrams</h1><p class="lede">Generated from the blueprint by code, never drawn by hand. Red nodes are steps, branches, or states nobody has defined yet: each is a blind spot to resolve.</p>';
+  var h = '<p class="back"><a href="#blueprint">← Blueprint</a></p><h1>Diagrams</h1><p class="lede">Generated from the blueprint by code, never drawn by hand. Red nodes are steps, branches, or states nobody has defined yet: each is a blind spot to resolve.</p>';
   if(!D.diagrams) return h+'<p class="empty">No blueprint yet. Run /openidea:blueprint.</p>';
   h += '<div class="toc"><a class="jump'+(!focus?' on':'')+'" href="#diagrams">All</a><a class="jump'+(focus==='context'?' on':'')+'" href="#diagrams/context">System context</a>'+D.diagrams.activity.map(function(a){return '<a class="jump'+(focus===a.id?' on':'')+'" href="#diagrams/'+encodeURIComponent(a.id)+'">'+esc(a.name)+'</a>';}).join('')+D.diagrams.states.map(function(a){return '<a class="jump'+(focus==='state-'+a.id?' on':'')+'" href="#diagrams/state-'+encodeURIComponent(a.id)+'">'+esc(a.name)+' states</a>';}).join('')+'</div>';
   if(!focus || focus==='context') h += '<h2>System context</h2>'+diagramBlock('Who and what the system talks to', D.diagrams.context, 'Actors on the left, external systems with the direction of data. Container architecture is a design decision and belongs in the OpenSpec design, not here.');
@@ -473,11 +487,12 @@ function offline(nodes){ [].forEach.call(nodes,function(n){ if(n.previousElement
 function route(){
   var parts = (location.hash.replace(/^#/,'')||'overview').split('/').map(decodeURIComponent);
   var page = parts[0], html;
-  if(page==='queue') html=queue(); else if(page==='gap') html=gap(parts[1]); else if(page==='ideas') html=ideas(); else if(page==='idea') html=idea(parts[1]);
+  if(page==='queue'){page='overview';html=overview();setTimeout(function(){go('@decide');},0);} else if(page==='feature') html=feature(parts[1]); else if(page==='gap') html=gap(parts[1]); else if(page==='ideas') html=ideas(); else if(page==='idea') html=idea(parts[1]);
   else if(page==='blueprint') html=blueprint(parts[1],parts[2]); else if(page==='features') html=features(); else if(page==='diagrams') html=diagrams(parts[1]); else if(page==='roadmap') html=roadmap(); else if(page==='issues'&&!CLIENT) html=issues(); else {page='overview';html=overview();}
-  var navKey = {gap:'queue',idea:'ideas'}[page]||page;
-  document.getElementById('nav').innerHTML = PAGES.map(function(p){return '<a href="#'+p[0]+'"'+(p[0]===navKey?' class="on"':'')+'>'+p[1]+'</a>';}).join('');
-  app.innerHTML = html; labelCells(app); drawMermaid(); window.scrollTo(0,0);
+  var navKey = {gap:'overview',issues:'overview',idea:'ideas',feature:'features',diagrams:'blueprint'}[page]||page;
+  var openN = D.gaps.filter(openGap).length;
+  document.getElementById('nav').innerHTML = PAGES.map(function(p){return '<a href="#'+p[0]+'"'+(p[0]===navKey?' class="on"':'')+'>'+p[1]+(p[0]==='overview'&&openN?'<span class="badge">'+openN+'</span>':'')+'</a>';}).join('');
+  app.innerHTML = html; labelCells(app); drawMermaid(); if(parts[0]!=='queue') window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route); route();
 })();

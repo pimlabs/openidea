@@ -342,6 +342,8 @@ node <skill dir>/scripts/openidea.mjs dashboard --client  # write dashboard/clie
 
 `validate` checks: frontmatter parses; idea id = file name; status enums; status matches folder; `killed` → `triage_note`; `merged` → `merged_into`; `split` → `split_into`; `ready` → `category`; history is current; `depends_on` exists and has no cycle; merge targets are not killed; gap fields, enums, `question`, and `resolution`; the ready gate; milestone ID format and uniqueness, missing ideas, an idea in two milestones, dependency order across milestones; blueprint ids, `derived_from`, assumptions, references, permission conflicts, ideas missing from the blueprint, and a stale blueprint.
 
+The dashboard has five sections, ordered by the questions a reader brings: **Overview** (what needs my decision: health stats, the ranked decision queue, milestone gates), **Features** (what the app does; each feature page holds its activity diagram and open gaps), **Roadmap** (what ships when), **Blueprint** (how it is structured: system context, elements with their state machines, permission matrix), **Ideas** (where it all came from). Checks and the full diagram list are reached from Overview and Blueprint, not from the main navigation. On phones the navigation is a bottom tab bar.
+
 Frontmatter must stay within the YAML subset the CLI reads: `key: value`, nested maps by indentation, block lists (`- item`), flow lists (`[a, b]`), flow maps (`{k: v}`), quoted strings, `null`, booleans, numbers, `|`/`>` block scalars, and `#` comments. Anything else is reported as a parse error, never guessed.
 
 If Node.js is not installed, tell the user once, then follow the manual procedures (section 7) and apply the same rules by reading the files.

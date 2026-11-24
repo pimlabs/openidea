@@ -1,5 +1,5 @@
 ---
-description: Generate the HTML dashboard (overview, decision queue, ideas, features, blueprint, diagrams, roadmap, checks) for people to read instead of the raw files
+description: Generate the HTML dashboard (overview with decisions, features, roadmap, blueprint, ideas) for people to read instead of the raw files
 ---
 
 Load the `openidea` skill (Skill tool) to read sections 6 (client safety) and 9 before proceeding.
